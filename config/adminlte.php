@@ -344,13 +344,28 @@ return [
             ],
         ],
         [
-            'text' => 'Consultas Informacion',
+            'text' => 'Entregas Paqueteria',
             'icon' => 'fas fa-users',
             // 'can'  => 'users.index',
             'submenu' => [
                 [
-                    'text' => 'Consulta Correspondencia',
-                    'url' => '',
+                    'text' => 'Distribuicion Paqueteria',
+                    'url' => 'distribuicion',
+                    'icon' => 'fas fa-user',
+                ],
+                [
+                    'text' => 'Entregas Cartero',
+                    'url' => 'entregas',
+                    'icon' => 'fas fa-user',
+                ],
+                [
+                    'text' => 'Despacho Cartero',
+                    'url' => 'despacho',
+                    'icon' => 'fas fa-user',
+                ],
+                [
+                    'text' => 'Inventario Cartero',
+                    'url' => 'inventario',
                     'icon' => 'fas fa-user',
                 ],
             ],
