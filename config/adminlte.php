@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'title' => 'adminagbc',
+    'title' => 'sendPost',
     'title_prefix' => '',
     'title_postfix' => '| AGBC',
 
@@ -63,7 +63,7 @@ return [
     |
     */
 
-    'logo' => '<b>admin</b>AGBC',
+    'logo' => '<b>send</b>Post',
     'logo_img' => 'vendor/adminlte/dist/img/AGBClogo.png',
     'logo_img_class' => 'brand-image img-circle',
     'logo_img_xl' => null,
