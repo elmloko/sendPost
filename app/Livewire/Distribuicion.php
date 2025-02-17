@@ -26,8 +26,8 @@ class Distribuicion extends Component
 
         // Verifica si el paquete ya existe para este usuario
         $existe = Paquete::where('codigo', $this->codigo)
-                         ->where('user', auth()->user()->name)
-                         ->first();
+            ->where('user', auth()->user()->name)
+            ->first();
         if ($existe) {
             session()->flash('message', 'El paquete con este código ya ha sido registrado.');
             return;
@@ -69,7 +69,6 @@ class Distribuicion extends Component
             ]);
 
             session()->flash('message', 'Paquete encontrado y guardado correctamente.');
-
         } catch (\Exception $e) {
             session()->flash('error', 'Error al buscar el paquete: ' . $e->getMessage());
         }
@@ -78,6 +77,22 @@ class Distribuicion extends Component
         $this->paquetes = Paquete::where('user', auth()->user()->name)->get();
     }
 
+    public function eliminar($codigo)
+    {
+        $paquete = Paquete::where('codigo', $codigo)
+            ->where('user', auth()->user()->name)
+            ->first();
+
+        if ($paquete) {
+            $paquete->forceDelete();
+            session()->flash('message', 'Paquete eliminado correctamente.');
+        } else {
+            session()->flash('error', 'No se encontró el paquete o no tienes permiso para eliminarlo.');
+        }
+
+        // Recargar la lista de paquetes
+        $this->paquetes = Paquete::where('user', auth()->user()->name)->get();
+    }
     public function render()
     {
         return view('livewire.distribuicion');

@@ -58,10 +58,14 @@
                         <tr>
                             <td>{{ $p->codigo }}</td>
                             <td>{{ $p->destinatario }}</td>
-                            <td>{{ $p->estado }}</td>
+                            <td>{{ $p->accion }}</td>
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
-                            <td>{{ $p->accion }}</td>
+                            <td>
+                                <button class="btn btn-danger btn-sm" wire:click="eliminar('{{ $p->codigo }}')" onclick="return confirm('¿Estás seguro de eliminar este paquete?')">
+                                    Eliminar
+                                </button>
+                            </td>                            
                         </tr>
                     @empty
                         <tr>
