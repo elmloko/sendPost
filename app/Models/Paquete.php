@@ -19,5 +19,6 @@ class Paquete extends Model
         'cuidad',
         'peso',
         'user',
+        'observacion',
     ];
 }

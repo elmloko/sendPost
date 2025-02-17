@@ -10,6 +10,12 @@ class Entregas extends Component
     public $codigo = '';  // Campo para la búsqueda
     public $paquetes = [];
 
+    // Variables para el modal
+    public $showModal = false;
+    public $selectedPaquete;
+    public $estado;
+    public $observacion;
+
     public function mount()
     {
         // Solo mostrar paquetes con estado "CARTERO"
@@ -28,6 +34,46 @@ class Entregas extends Component
                 $query->where('codigo', 'like', "%{$this->codigo}%");
             })
             ->get();
+    }
+
+    // Método para abrir el modal y asignar el paquete seleccionado
+    public function openModal($id)
+    {
+        $this->selectedPaquete = $id;
+        $this->estado = '';
+        $this->observacion = '';
+        $this->showModal = true;
+    }
+
+    // Método para cerrar el modal
+    public function closeModal()
+    {
+        $this->showModal = false;
+    }
+
+    // Método que procesa la acción de dar de baja
+    public function darDeBaja()
+    {
+        $validatedData = $this->validate([
+            'estado' => 'required|in:ENTREGADO,RETORNO',
+            'observacion' => 'required_if:estado,RETORNO',  // Obligatorio si se eligió RETORNO
+        ]);
+
+        $paquete = Paquete::find($this->selectedPaquete);
+        if ($paquete) {
+            // Actualiza el estado y, si es RETORNO, guarda la observación
+            $data = ['accion' => $validatedData['estado']];
+            if ($validatedData['estado'] == 'RETORNO') {
+                $data['observacion'] = $validatedData['observacion'];
+            }
+            $paquete->update($data);
+
+            session()->flash('message', 'El paquete se ha dado de baja correctamente.');
+        } else {
+            session()->flash('error', 'Paquete no encontrado.');
+        }
+
+        $this->closeModal();
     }
 
     public function render()
