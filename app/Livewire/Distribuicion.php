@@ -103,34 +103,34 @@ class Distribuicion extends Component
 
     public function asignarACartero()
     {
-        // Actualiza los paquetes que están asignados
-        $actualizados = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'ASIGNADO')
-            ->update(['accion' => 'CARTERO']);
-
-        // Mensajes flash para informar al usuario
-        if ($actualizados) {
-            session()->flash('message', "Se actualizaron {$actualizados} paquetes a 'CARTERO'.");
-        } else {
-            session()->flash('error', 'No hay paquetes para actualizar.');
-        }
-
-        // Recupera los paquetes actualizados (ahora con estado 'CARTERO')
+        // Obtener paquetes con estado "ASIGNADO" antes de actualizarlos
         $paquetes = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'CARTERO')
+            ->where('accion', 'ASIGNADO')
             ->get();
-
-        // Genera el PDF usando la vista 'cartero.pdf.asignar' y pasando la variable 'packages'
-        $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
-
-        // Emitir un evento en el navegador para recargar el botón
+    
+        // Si no hay paquetes asignados, generar un PDF en blanco
+        if ($paquetes->isEmpty()) {
+            $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
+        } else {
+            // Generar el PDF con los paquetes antes de actualizarlos
+            $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
+    
+            // Actualizar estado a "CARTERO"
+            Paquete::where('user', auth()->user()->name)
+                ->where('accion', 'ASIGNADO')
+                ->update(['accion' => 'CARTERO']);
+    
+            session()->flash('message', "Se actualizaron {$paquetes->count()} paquetes a 'CARTERO'.");
+        }
+    
+        // Emitir un evento en el navegador para recargar la página
         $this->dispatch('pdf-descargado');
-
-        // Retorna el PDF para descargarlo usando streamDownload
+    
+        // Descargar el PDF generado
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
         }, 'ReporteEntrega.pdf');
-    }
+    }    
 
     public function render()
     {
