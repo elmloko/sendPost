@@ -36,7 +36,7 @@
     {{-- Tabla con los paquetes --}}
     <div class="card">
         <div class="card-header">
-            Lista de Paquetes
+            Lista de Paquetes para ser Asignados por Cartero
         </div>
         <div class="card-body">
             <table class="table table-bordered table-striped">
