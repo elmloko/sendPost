@@ -15,9 +15,6 @@
 
     {{-- Formulario para buscar por código --}}
     <div class="card mb-4">
-        <div class="card-header">
-            Buscar Paquete
-        </div>
         <div class="card-body">
             <form wire:submit.prevent="buscar">
                 <div class="mb-3">
@@ -74,6 +71,23 @@
                     @endforelse
                 </tbody>
             </table>
+            <div class="d-flex justify-content-end mt-3">
+                <button id="boton-entrega" class="btn btn-success"
+                    wire:click="asignarACartero()" 
+                    wire:loading.attr="disabled"
+                    onclick="return confirm('¿Estás seguro de recoger todos los paquetes?')">
+                    Iniciar a entregar
+                </button>
+            </div>
         </div>
     </div>
+   
 </div>
+<script>
+    document.addEventListener('pdf-descargado', function () {
+        setTimeout(function () {
+            location.reload();
+        }, 500); // Espera 1 segundo antes de recargar para asegurar la descarga del PDF
+    });
+</script>
+
