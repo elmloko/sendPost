@@ -68,69 +68,71 @@
 
     {{-- Modal Dar de baja --}}
     @if ($showModal)
-    <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.8);">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content border-primary shadow-lg">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Dar de baja {{ $p->codigo }}</h5>
-                    <button type="button" class="btn-close btn-close-white" wire:click="closeModal"></button>
-                </div>
-                <div class="modal-body">
-                    <form wire:submit.prevent="darDeBaja">
-                        <div class="mb-3">
-                            <label for="estado" class="form-label fw-bold">Estado</label>
-                            <select id="estado" wire:model="estado" onchange="toggleObservacion()" class="form-select">
-                                <option value="">Seleccione un estado</option>
-                                <option value="ENTREGADO">ENTREGADO</option>
-                                <option value="RETORNO">RETORNO</option>
-                            </select>
-                            @error('estado')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
-                        <!-- Contenedor de observaciones, oculto por defecto -->
-                        <div class="mb-3" id="observacionContainer" style="display: none;">
-                            <label for="observacion" class="form-label fw-bold">Observaciones</label>
-                            <select id="observacion" wire:model="observacion" class="form-select">
-                                <option value="">Seleccione una observación</option>
-                                <option value="Dirección incorrecta">Dirección incorrecta</option>
-                                <option value="Destinatario no localizado">Destinatario no localizado</option>
-                                <option value="Destinatario ausente">Destinatario ausente</option>
-                                <option value="Artículo rechazado">Artículo rechazado</option>
-                                <option value="Reprogramación solicitada">Reprogramación solicitada</option>
-                                <option value="Acceso restringido">Acceso restringido</option>
-                                <option value="Artículo equivocado">Artículo equivocado</option>
-                                <option value="Artículo dañado">Artículo dañado</option>
-                                <option value="No reclamado">No reclamado</option>
-                                <option value="Fallecido">Fallecido</option>
-                                <option value="Fuerza mayor">Fuerza mayor</option>
-                                <option value="Recojo en agencia">Recojo en agencia</option>
-                                <option value="Destinatario de vacaciones">Destinatario de vacaciones</option>
-                                <option value="Destinatario en traslado">Destinatario en traslado</option>
-                                <option value="Falta de identificación">Falta de identificación</option>
-                                <option value="Reintentos fallidos">Reintentos fallidos</option>
-                                <option value="Otros">Otros</option>
-                            </select>
-                            @error('observacion')
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>                            
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" wire:click="closeModal">Cancelar</button>
-                            <button type="submit" class="btn btn-success">Guardar</button>
-                        </div>
-                    </form>
+        <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.8);">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content border-primary shadow-lg">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">Dar de baja {{ $p->codigo }}</h5>
+                        <button type="button" class="btn-close btn-close-white" wire:click="closeModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form wire:submit.prevent="darDeBaja">
+                            <div class="mb-3">
+                                <label for="estado" class="form-label fw-bold">Estado</label>
+                                <select id="estado" wire:model="estado" onchange="toggleObservacion()"
+                                    class="form-select">
+                                    <option value="">Seleccione un estado</option>
+                                    <option value="ENTREGADO">ENTREGADO</option>
+                                    <option value="RETORNO">RETORNO</option>
+                                </select>
+                                @error('estado')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <!-- Contenedor de observaciones, oculto por defecto -->
+                            <div class="mb-3" id="observacionContainer" style="display: none;">
+                                <label for="observacion" class="form-label fw-bold">Observaciones</label>
+                                <select id="observacion" wire:model="observacion" class="form-select">
+                                    <option value="">Seleccione una observación</option>
+                                    <option value="Dirección incorrecta">Dirección incorrecta</option>
+                                    <option value="Destinatario no localizado">Destinatario no localizado</option>
+                                    <option value="Destinatario ausente">Destinatario ausente</option>
+                                    <option value="Artículo rechazado">Artículo rechazado</option>
+                                    <option value="Reprogramación solicitada">Reprogramación solicitada</option>
+                                    <option value="Acceso restringido">Acceso restringido</option>
+                                    <option value="Artículo equivocado">Artículo equivocado</option>
+                                    <option value="Artículo dañado">Artículo dañado</option>
+                                    <option value="No reclamado">No reclamado</option>
+                                    <option value="Fallecido">Fallecido</option>
+                                    <option value="Fuerza mayor">Fuerza mayor</option>
+                                    <option value="Recojo en agencia">Recojo en agencia</option>
+                                    <option value="Destinatario de vacaciones">Destinatario de vacaciones</option>
+                                    <option value="Destinatario en traslado">Destinatario en traslado</option>
+                                    <option value="Falta de identificación">Falta de identificación</option>
+                                    <option value="Reintentos fallidos">Reintentos fallidos</option>
+                                    <option value="Otros">Otros</option>
+                                </select>
+                                @error('observacion')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary"
+                                    wire:click="closeModal">Cancelar</button>
+                                <button type="submit" class="btn btn-success">Guardar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-@endif
+    @endif
 
     <script>
         function toggleObservacion() {
             var estadoSelect = document.getElementById('estado');
             var observacionContainer = document.getElementById('observacionContainer');
-    
+
             if (estadoSelect.value === 'RETORNO') {
                 observacionContainer.style.display = 'block';
             } else {
@@ -141,6 +143,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             toggleObservacion();
         });
-    </script>    
+    </script>
+    <script>
+        window.addEventListener('reloadPage', event => {
+            window.location.reload();
+        });
+    </script>
+    
 </div>
-

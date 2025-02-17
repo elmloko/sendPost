@@ -56,17 +56,24 @@ class Entregas extends Component
     {
         $validatedData = $this->validate([
             'estado' => 'required|in:ENTREGADO,RETORNO',
-            'observacion' => 'required_if:estado,RETORNO',  // Obligatorio si se eligió RETORNO
+            'observacion' => 'required_if:estado,RETORNO',
         ]);
 
         $paquete = Paquete::find($this->selectedPaquete);
+
         if ($paquete) {
-            // Actualiza el estado y, si es RETORNO, guarda la observación
-            $data = ['accion' => $validatedData['estado']];
-            if ($validatedData['estado'] == 'RETORNO') {
-                $data['observacion'] = $validatedData['observacion'];
+            if ($validatedData['estado'] === 'ENTREGADO') {
+                // Actualiza la columna 'accion' a 'ENTREGADO'
+                $paquete->update(['accion' => 'ENTREGADO']);
+                // Aplica el soft delete
+                $paquete->delete();
+            } elseif ($validatedData['estado'] === 'RETORNO') {
+                // Actualiza el estado a RETORNO y guarda la observación
+                $paquete->update([
+                    'accion' => 'RETORNO',
+                    'observacion' => $validatedData['observacion']
+                ]);
             }
-            $paquete->update($data);
 
             session()->flash('message', 'El paquete se ha dado de baja correctamente.');
         } else {
@@ -74,6 +81,7 @@ class Entregas extends Component
         }
 
         $this->closeModal();
+        $this->dispatch('reloadPage');
     }
 
     public function render()
