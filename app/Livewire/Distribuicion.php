@@ -7,6 +7,8 @@ use App\Models\Paquete;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\PDF;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class Distribuicion extends Component
 {
@@ -136,36 +138,71 @@ class Distribuicion extends Component
             ->get();
     }
 
-    public function asignarACartero()
-    {
-        // Obtener paquetes con estado "ASIGNADO" antes de actualizarlos
-        $paquetes = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'ASIGNADO')
-            ->get();
-    
-        // Si no hay paquetes asignados, generar un PDF en blanco
-        if ($paquetes->isEmpty()) {
-            $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
-        } else {
-            // Generar el PDF con los paquetes antes de actualizarlos
-            $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
-    
-            // Actualizar estado a "CARTERO"
-            Paquete::where('user', auth()->user()->name)
-                ->where('accion', 'ASIGNADO')
-                ->update(['accion' => 'CARTERO']);
-    
-            session()->flash('message', "Se actualizaron {$paquetes->count()} paquetes a 'CARTERO'.");
+    public function asignarACartero() 
+{
+    // Obtener paquetes con estado "ASIGNADO" antes de actualizarlos
+    $paquetes = Paquete::where('user', auth()->user()->name)
+        ->where('accion', 'ASIGNADO')
+        ->get();
+
+    // Si no hay paquetes asignados, generar un PDF en blanco
+    if ($paquetes->isEmpty()) {
+        $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
+    } else {
+        // Generar el PDF con los paquetes antes de actualizarlos
+        $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
+
+        foreach ($paquetes as $paquete) {
+            // Construcción de la URL específica para cada paquete
+            $url = "http://172.65.10.52/api/updatePackage/{$paquete->codigo}";
+
+            // Datos a enviar a la API
+            $data = [
+                "ESTADO" => "CARTERO",
+                "action" => "EN TRASCURSO",
+                "user_id" => 86, // Este ID debería ser dinámico si varía
+                "descripcion" => "Paquete Destinado por envío con Cartero de estado",
+                "usercartero" => Auth::user()->name,
+            ];
+
+            // Autorización de la API
+            $headers = [
+                'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ];
+
+            try {
+                // Realizar la solicitud PUT
+                $response = Http::withHeaders($headers)->put($url, $data);
+
+                // Verificar si la solicitud fue exitosa
+                if ($response->successful()) {
+                    Log::info("Paquete {$paquete->codigo} actualizado en API con éxito.");
+                } else {
+                    Log::error("Error al actualizar paquete {$paquete->codigo} en API: " . $response->body());
+                }
+            } catch (\Exception $e) {
+                Log::error("Excepción al conectar con la API para el paquete {$paquete->codigo}: " . $e->getMessage());
+            }
         }
-    
-        // Emitir un evento en el navegador para recargar la página
-        $this->dispatch('pdf-descargado');
-    
-        // Descargar el PDF generado
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->stream();
-        }, 'ReporteEntrega.pdf');
-    }    
+
+        // Actualizar estado a "CARTERO" en la base de datos
+        Paquete::where('user', auth()->user()->name)
+            ->where('accion', 'ASIGNADO')
+            ->update(['accion' => 'CARTERO']);
+
+        session()->flash('message', "Se actualizaron {$paquetes->count()} paquetes a 'CARTERO'.");
+    }
+
+    // Emitir un evento en el navegador para recargar la página
+    $this->dispatch('pdf-descargado');
+
+    // Descargar el PDF generado
+    return response()->streamDownload(function () use ($pdf) {
+        echo $pdf->stream();
+    }, 'ReporteEntrega.pdf');
+}
 
     public function render()
     {
