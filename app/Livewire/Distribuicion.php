@@ -153,19 +153,29 @@ class Distribuicion extends Component
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
 
             foreach ($paquetes as $paquete) {
-                // Construcción de la URL específica para cada paquete
-                $url = "http://172.65.10.52/api/updatePackage/{$paquete->codigo}";
+                // URLs de las APIs
+                $url_antigua = "http://172.65.10.52/api/updatePackage/{$paquete->codigo}";
+                $url_nueva = "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems";
 
-                // Datos a enviar a la API
-                $data = [
+                // Datos para la API antigua
+                $data_antigua = [
                     "ESTADO" => "CARTERO",
                     "action" => "EN TRASCURSO",
-                    "user_id" => 86, // Este ID debería ser dinámico si varía
+                    "user_id" => 86, // ID del usuario, puede ser dinámico si necesario
                     "descripcion" => "Paquete Destinado por envío con Cartero de estado",
-                    "usercartero" => Auth::user()->name,
+                    "usercartero" => auth()->user()->name,
                 ];
 
-                // Autorización de la API
+                // Datos para la nueva API
+                $data_nueva = [
+                    "codigo" => $paquete->codigo,
+                    "estado" => 4, // Estado correspondiente en la API
+                    "user_id" => auth()->id(), // ID del usuario autenticado
+                    "observacion_entrega" => "", // Campo vacío según requerimiento
+                    "usercartero" => auth()->user()->name, // Nombre del cartero actual
+                ];
+
+                // Encabezados comunes
                 $headers = [
                     'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
                     'Accept' => 'application/json',
@@ -173,17 +183,27 @@ class Distribuicion extends Component
                 ];
 
                 try {
-                    // Realizar la solicitud PUT
-                    $response = Http::withHeaders($headers)->put($url, $data);
+                    // Solicitud a la API antigua
+                    $response_antigua = Http::withHeaders($headers)->put($url_antigua, $data_antigua);
 
-                    // Verificar si la solicitud fue exitosa
-                    if ($response->successful()) {
-                        Log::info("Paquete {$paquete->codigo} actualizado en API con éxito.");
+                    // Verificar si la solicitud a la API antigua fue exitosa
+                    if ($response_antigua->successful()) {
+                        Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la API antigua.");
                     } else {
-                        Log::error("Error al actualizar paquete {$paquete->codigo} en API: " . $response->body());
+                        Log::error("Error al actualizar el paquete {$paquete->codigo} en la API antigua: " . $response_antigua->body());
+                    }
+
+                    // Solicitud a la nueva API
+                    $response_nueva = Http::withHeaders($headers)->put($url_nueva, $data_nueva);
+
+                    // Verificar si la solicitud a la nueva API fue exitosa
+                    if ($response_nueva->successful()) {
+                        Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la nueva API.");
+                    } else {
+                        Log::error("Error al actualizar el paquete {$paquete->codigo} en la nueva API: " . $response_nueva->body());
                     }
                 } catch (\Exception $e) {
-                    Log::error("Excepción al conectar con la API para el paquete {$paquete->codigo}: " . $e->getMessage());
+                    Log::error("Error al conectar con las APIs para el paquete {$paquete->codigo}: " . $e->getMessage());
                 }
             }
 
