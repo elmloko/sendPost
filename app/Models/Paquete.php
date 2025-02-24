@@ -20,5 +20,6 @@ class Paquete extends Model
         'peso',
         'user',
         'observacion',
+        'intento',
     ];
 }
