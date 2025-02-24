@@ -59,7 +59,10 @@
                             <td>{{ $p->peso }}</td>
                             <td>{{ $p->observacion }}</td>
                             <td>
-                            </td>                            
+                                <button wire:click="devolverAVentanilla('{{ $p->codigo }}')" class="btn btn-warning">
+                                    Devolver a Ventanilla
+                                </button>
+                            </td>                           
                         </tr>
                     @empty
                         <tr>
