@@ -62,7 +62,10 @@
                                 <button wire:click="devolverAVentanilla('{{ $p->codigo }}')" class="btn btn-warning">
                                     Devolver a Ventanilla
                                 </button>
-                            </td>                           
+                                <button wire:click="devolverACartero('{{ $p->codigo }}')" class="btn btn-info">
+                                    Devolver a Cartero
+                                </button>
+                            </td>                          
                         </tr>
                     @empty
                         <tr>

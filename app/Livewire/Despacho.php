@@ -93,6 +93,74 @@ class Despacho extends Component
         $this->mount(); // Recargar paquetes después de la actualización
     }
 
+    public function devolverACartero($codigo)
+    {
+        $paquete = Paquete::where('codigo', $codigo)->first();
+
+        if ($paquete) {
+            $api_urls = [
+                'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$codigo}",
+                'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+                'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
+            ];
+
+            $api_data = [
+                'TRACKINGBO' => [
+                    "ESTADO" => "CARTERO",
+                    "action" => "ESTADO",
+                    "user_id" => 86,
+                    "descripcion" => "Correcion de Estado para Cartero",
+                    "usercartero" => auth()->user()->name,
+                ],
+                'EMS' => [
+                    "codigo" => $paquete->codigo,
+                    "estado" => 4,
+                    "observacion_entrega" => "",
+                    "usercartero" => auth()->user()->name,
+                    "action" => "Correcion de Estado para Cartero",
+                ],
+                'GESCON' => [
+                    "guia" => $paquete->codigo,
+                    "estado" => 2,
+                    "entrega_observacion" => "",
+                    "usercartero" => auth()->user()->name,
+                    "action" => "Correcion de Estado para Cartero",
+                ]
+            ];
+
+            $headers = [
+                'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ];
+
+            try {
+                $origen = $paquete->sys;
+
+                if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
+                    $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
+
+                    if ($response->successful()) {
+                        $paquete->accion = 'CARTERO';
+                        $paquete->save();
+
+                        session()->flash('message', "El paquete {$codigo} fue devuelto al cartero exitosamente usando la API {$origen}.");
+                    } else {
+                        session()->flash('error', "Error al devolver el paquete {$codigo} al cartero usando la API {$origen}: " . $response->body());
+                    }
+                } else {
+                    session()->flash('error', "No se pudo identificar la API correspondiente para el paquete {$codigo}.");
+                }
+            } catch (\Exception $e) {
+                Log::error("Error al conectar con la API {$origen} para el paquete {$codigo}: " . $e->getMessage());
+                session()->flash('error', "Error al conectar con la API {$origen} para el paquete {$codigo}.");
+            }
+        } else {
+            session()->flash('error', "El paquete con código {$codigo} no fue encontrado.");
+        }
+
+        $this->mount(); // Recargar paquetes después de la actualización
+    }
 
     public function render()
     {
