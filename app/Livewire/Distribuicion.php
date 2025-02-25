@@ -175,7 +175,6 @@ class Distribuicion extends Component
                     'EMS' => [
                         "codigo" => $paquete->codigo,
                         "estado" => 4, // Estado correspondiente en la API
-                        "user_id" => 6,
                         "observacion_entrega" => "",
                         "usercartero" => auth()->user()->name,
                         "action" => "Asignar Cartero",
@@ -183,7 +182,6 @@ class Distribuicion extends Component
                     'GESCON' => [
                         "guia" => $paquete->codigo,
                         "estado" => 2, // Estado correspondiente en la API
-                        "cartero_entrega_id" => 1,
                         "entrega_observacion" => "",
                         "usercartero" => auth()->user()->name,
                         "action" => "Envio en Camino",
