@@ -28,20 +28,22 @@ class Distribuicion extends Component
         $this->validate([
             'codigo' => 'required|string',
         ]);
-
-        // Verifica si el paquete ya existe para este usuario
-        $existe = Paquete::where('codigo', $this->codigo)
+    
+        // Busca si ya existe un paquete con este código y estado INTENTO
+        $paqueteExistente = Paquete::where('codigo', $this->codigo)
             ->where('user', auth()->user()->name)
             ->first();
-        if ($existe) {
-            session()->flash('message', 'El paquete con este código ya ha sido registrado.');
+    
+        // Si el paquete existe y el intento es 3, no se permite registrar más
+        if ($paqueteExistente && $paqueteExistente->intento >= 3) {
+            session()->flash('error', 'El paquete ha alcanzado el máximo de intentos. Mover a REZAGO');
             return;
         }
-
+    
         // Configuración del cliente Guzzle
         $client = new Client(['verify' => false]);
         $data = null;
-
+    
         // Lista de APIs a consultar con sus alias
         $apis = [
             [
@@ -64,15 +66,15 @@ class Distribuicion extends Component
                 ],
             ],
         ];
-
+    
         $sistema_origen = null;
-
+    
         // Recorre cada API hasta encontrar datos válidos
         foreach ($apis as $api) {
             try {
                 $response = $client->get($api['url'], $api['options']);
                 $data = json_decode($response->getBody(), true);
-
+    
                 // Si se encuentra el paquete válido, registra de qué sistema proviene
                 if ($data && (isset($data['CODIGO']) || isset($data['codigo']))) {
                     $sistema_origen = $api['alias'];
@@ -82,45 +84,53 @@ class Distribuicion extends Component
                 continue; // Si falla, pasa a la siguiente API
             }
         }
-
+    
         // Si no se encontró el paquete en ninguna API
         if (!$data || (!$data['CODIGO'] && !$data['codigo'])) {
             session()->flash('error', 'No se encontró el paquete en los servicios externos.');
             return;
         }
-
+    
         // Normaliza los campos
         $codigo       = $data['CODIGO']       ?? $data['codigo']       ?? null;
         $destinatario = $data['DESTINATARIO'] ?? $data['destinatario'] ?? null;
         $estado       = $data['ESTADO']       ?? $data['estado']       ?? null;
         $ciudad       = $data['CUIDAD']       ?? $data['ciudad']       ?? null;
         $peso         = $data['PESO']         ?? $data['peso']         ?? null;
-
+    
         // Valida que la ciudad del paquete coincida con la del usuario autenticado
         if ($ciudad !== auth()->user()->city) {
             session()->flash('error', 'El paquete no se puede registrar porque la ciudad del paquete no coincide con la ciudad del usuario.');
             return;
         }
-
-        // Crea el paquete con estado "ASIGNADO" y guarda el alias del sistema en el campo sys
-        Paquete::create([
-            'codigo'       => $codigo,
-            'destinatario' => $destinatario,
-            'estado'       => $estado,
-            'cuidad'       => $ciudad,
-            'peso'         => isset($peso) ? floatval($peso) : null,
-            'accion'       => 'ASIGNADO',
-            'user'         => auth()->user()->name,
-            'sys'          => $sistema_origen,
-        ]);
-
+    
+        // Si el paquete ya existe, actualiza el intento y cambia el estado a ASIGNADO
+        if ($paqueteExistente) {
+            $paqueteExistente->intento += 1;
+            $paqueteExistente->accion = 'ASIGNADO';
+            $paqueteExistente->save();
+        } else {
+            // Si no existe, crea el paquete con intento = 1 y estado ASIGNADO
+            Paquete::create([
+                'codigo'       => $codigo,
+                'destinatario' => $destinatario,
+                'estado'       => 'ASIGNADO',
+                'cuidad'       => $ciudad,
+                'peso'         => isset($peso) ? floatval($peso) : null,
+                'accion'       => 'ASIGNADO',
+                'user'         => auth()->user()->name,
+                'sys'          => $sistema_origen,
+                'intento'      => 1, // Primer intento
+            ]);
+        }
+    
         session()->flash('message', "Paquete encontrado y registrado correctamente desde el sistema: {$sistema_origen}.");
-
+    
         // Actualiza la lista de paquetes con estado "ASIGNADO"
         $this->paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
             ->get();
-    }
+    }    
 
     public function eliminar($codigo)
     {

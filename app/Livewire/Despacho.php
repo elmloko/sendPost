@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class Despacho extends Component
 {
     public $paquetes;
+    public $codigo = '';
 
     public function mount()
     {
@@ -162,6 +163,19 @@ class Despacho extends Component
         $this->mount(); // Recargar paquetes después de la actualización
     }
 
+    public function buscar()
+    {
+        // Si el campo de código está vacío, mostrar todos los paquetes en estado 'RETORNO'
+        if (empty($this->codigo)) {
+            $this->paquetes = Paquete::where('accion', 'RETORNO')->get();
+        } else {
+            // Filtrar los paquetes que coincidan con el código ingresado
+            $this->paquetes = Paquete::where('accion', 'RETORNO')
+                ->where('codigo', 'LIKE', "%{$this->codigo}%")
+                ->get();
+        }
+    }
+    
     public function render()
     {
         return view('livewire.despacho', ['paquetes' => $this->paquetes]);
