@@ -28,22 +28,22 @@ class Distribuicion extends Component
         $this->validate([
             'codigo' => 'required|string',
         ]);
-    
+
         // Busca si ya existe un paquete con este código y estado INTENTO
         $paqueteExistente = Paquete::where('codigo', $this->codigo)
             ->where('user', auth()->user()->name)
             ->first();
-    
+
         // Si el paquete existe y el intento es 3, no se permite registrar más
         if ($paqueteExistente && $paqueteExistente->intento >= 3) {
             session()->flash('error', 'El paquete ha alcanzado el máximo de intentos. Mover a REZAGO');
             return;
         }
-    
+
         // Configuración del cliente Guzzle
         $client = new Client(['verify' => false]);
         $data = null;
-    
+
         // Lista de APIs a consultar con sus alias
         $apis = [
             [
@@ -66,15 +66,15 @@ class Distribuicion extends Component
                 ],
             ],
         ];
-    
+
         $sistema_origen = null;
-    
+
         // Recorre cada API hasta encontrar datos válidos
         foreach ($apis as $api) {
             try {
                 $response = $client->get($api['url'], $api['options']);
                 $data = json_decode($response->getBody(), true);
-    
+
                 // Si se encuentra el paquete válido, registra de qué sistema proviene
                 if ($data && (isset($data['CODIGO']) || isset($data['codigo']))) {
                     $sistema_origen = $api['alias'];
@@ -84,26 +84,26 @@ class Distribuicion extends Component
                 continue; // Si falla, pasa a la siguiente API
             }
         }
-    
+
         // Si no se encontró el paquete en ninguna API
         if (!$data || (!$data['CODIGO'] && !$data['codigo'])) {
             session()->flash('error', 'No se encontró el paquete en los servicios externos.');
             return;
         }
-    
+
         // Normaliza los campos
         $codigo       = $data['CODIGO']       ?? $data['codigo']       ?? null;
         $destinatario = $data['DESTINATARIO'] ?? $data['destinatario'] ?? null;
         $estado       = $data['ESTADO']       ?? $data['estado']       ?? null;
         $ciudad       = $data['CUIDAD']       ?? $data['ciudad']       ?? null;
         $peso         = $data['PESO']         ?? $data['peso']         ?? null;
-    
+
         // Valida que la ciudad del paquete coincida con la del usuario autenticado
         if ($ciudad !== auth()->user()->city) {
             session()->flash('error', 'El paquete no se puede registrar porque la ciudad del paquete no coincide con la ciudad del usuario.');
             return;
         }
-    
+
         // Si el paquete ya existe, actualiza el intento y cambia el estado a ASIGNADO
         if ($paqueteExistente) {
             $paqueteExistente->intento += 1;
@@ -123,14 +123,14 @@ class Distribuicion extends Component
                 'intento'      => 1, // Primer intento
             ]);
         }
-    
+
         session()->flash('message', "Paquete encontrado y registrado correctamente desde el sistema: {$sistema_origen}.");
-    
+
         // Actualiza la lista de paquetes con estado "ASIGNADO"
         $this->paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
             ->get();
-    }    
+    }
 
     public function eliminar($codigo)
     {
@@ -138,11 +138,23 @@ class Distribuicion extends Component
             ->where('user', auth()->user()->name)
             ->first();
 
-        if ($paquete) {
+        if (!$paquete) {
+            session()->flash('error', 'No se encontró el paquete o no tienes permiso para eliminarlo.');
+            return;
+        }
+
+        // Verificar si el paquete fue registrado antes (intento > 1)
+        if ($paquete->intento > 1) {
+            // En lugar de eliminar, cambiar el estado a INTENTO y restar en el campo intento
+            $paquete->accion = 'INTENTO';
+            $paquete->intento -= 1;
+            $paquete->save();
+
+            session()->flash('message', 'El estado del paquete ha sido cambiado a INTENTO y el intento se ha reducido en 1.');
+        } else {
+            // Si es el primer intento, eliminar definitivamente
             $paquete->forceDelete();
             session()->flash('message', 'Paquete eliminado correctamente.');
-        } else {
-            session()->flash('error', 'No se encontró el paquete o no tienes permiso para eliminarlo.');
         }
 
         // Solo mostrar paquetes con estado "ASIGNADO"
@@ -157,14 +169,14 @@ class Distribuicion extends Component
         $paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
             ->get();
-    
+
         // Si no hay paquetes asignados, generar un PDF en blanco
         if ($paquetes->isEmpty()) {
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
         } else {
             // Generar el PDF con los paquetes antes de actualizarlos
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
-    
+
             foreach ($paquetes as $paquete) {
                 // Definir URLs según el origen del paquete
                 $api_urls = [
@@ -172,7 +184,7 @@ class Distribuicion extends Component
                     'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
                     'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
                 ];
-    
+
                 // Definir datos según el origen
                 $api_data = [
                     'TRACKINGBO' => [
@@ -197,21 +209,21 @@ class Distribuicion extends Component
                         "action" => "Envio en Camino",
                     ]
                 ];
-    
+
                 // Encabezados comunes
                 $headers = [
                     'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
                 ];
-    
+
                 try {
                     $origen = $paquete->sys; // Obtener el sistema desde el campo sys
-    
+
                     // Si el origen es válido, realiza la solicitud directamente
                     if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
                         $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
-    
+
                         // Verificar la respuesta de la API
                         if ($response->successful()) {
                             Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la API: {$origen}.");
@@ -225,24 +237,23 @@ class Distribuicion extends Component
                     Log::error("Error al conectar con la API {$origen} para el paquete {$paquete->codigo}: " . $e->getMessage());
                 }
             }
-    
+
             // Actualizar estado a "CARTERO" en la base de datos
             Paquete::where('user', auth()->user()->name)
                 ->where('accion', 'ASIGNADO')
                 ->update(['accion' => 'CARTERO']);
-    
+
             session()->flash('message', "Se actualizaron {$paquetes->count()} paquetes a 'CARTERO'.");
-    
         }
-    
+
         // Emitir un evento en el navegador para recargar la página
         $this->dispatch('pdf-descargado');
-    
+
         // Descargar el PDF generado
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
         }, 'ReporteEntrega.pdf');
-    }    
+    }
 
     public function render()
     {
