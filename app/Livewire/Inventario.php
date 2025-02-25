@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class Inventario extends Component
 {
     public $paquetes;
+    public $codigo = '';
 
     public function mount()
     {
@@ -17,6 +18,19 @@ class Inventario extends Component
         $this->paquetes = Paquete::onlyTrashed()
             ->where('accion', 'ENTREGADO')
             ->get();
+    }
+
+    public function buscar()
+    {
+        // Si el campo de código está vacío, mostrar todos los paquetes en estado 'RETORNO'
+        if (empty($this->codigo)) {
+            $this->paquetes = Paquete::where('accion', 'ENTREGADO')->get();
+        } else {
+            // Filtrar los paquetes que coincidan con el código ingresado
+            $this->paquetes = Paquete::onlyTrashed('accion', 'ENTREGADO')
+                ->where('codigo', 'LIKE', "%{$this->codigo}%")
+                ->get();
+        }
     }
 
     public function darAlta($codigo)
