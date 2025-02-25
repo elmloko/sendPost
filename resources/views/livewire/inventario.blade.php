@@ -46,7 +46,6 @@
                         <th>Destinatario</th>
                         <th>Ciudad</th>
                         <th>Peso</th>
-                        <th>Observación</th>
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -58,7 +57,8 @@
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
                             <td>
-                            </td>                            
+                                <button class="btn" style="background-color: #00CFFF; color: white;" wire:click="darAlta('{{ $p->codigo }}')">ALTA</button>
+                            </td>                                                        
                         </tr>
                     @empty
                         <tr>
