@@ -21,5 +21,6 @@ class Paquete extends Model
         'user',
         'observacion',
         'intento',
+        'sys',
     ];
 }

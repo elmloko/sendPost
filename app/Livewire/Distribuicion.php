@@ -38,22 +38,25 @@ class Distribuicion extends Component
             return;
         }
 
-        // Configuración del cliente Guzzle (con verificación SSL desactivada)
+        // Configuración del cliente Guzzle
         $client = new Client(['verify' => false]);
         $data = null;
 
-        // Lista de APIs a consultar con sus respectivas opciones
+        // Lista de APIs a consultar con sus alias
         $apis = [
             [
-                'url'     => "http://172.65.10.52:8011/api/admisiones/buscar-por-codigo/{$this->codigo}",
+                'url' => "http://172.65.10.52:8011/api/admisiones/buscar-por-codigo/{$this->codigo}",
+                'alias' => 'EMS',
                 'options' => [],
             ],
             [
-                'url'     => "http://172.65.10.52:8450/api/solicitudes/buscar-por-codigo/{$this->codigo}",
+                'url' => "http://172.65.10.52:8450/api/solicitudes/buscar-por-codigo/{$this->codigo}",
+                'alias' => 'GESCON',
                 'options' => [],
             ],
             [
-                'url'     => "https://correos.gob.bo:8000/api/prueba/{$this->codigo}",
+                'url' => "https://correos.gob.bo:8000/api/prueba/{$this->codigo}",
+                'alias' => 'TRACKINGBO',
                 'options' => [
                     'headers' => [
                         'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
@@ -62,29 +65,31 @@ class Distribuicion extends Component
             ],
         ];
 
+        $sistema_origen = null;
+
         // Recorre cada API hasta encontrar datos válidos
         foreach ($apis as $api) {
             try {
                 $response = $client->get($api['url'], $api['options']);
                 $data = json_decode($response->getBody(), true);
 
-                // Se asume que si se recibe el campo 'CODIGO' (o 'codigo') es un paquete válido.
+                // Si se encuentra el paquete válido, registra de qué sistema proviene
                 if ($data && (isset($data['CODIGO']) || isset($data['codigo']))) {
+                    $sistema_origen = $api['alias'];
                     break;
                 }
             } catch (\Exception $e) {
-                // Si falla en una API, continúa con la siguiente
-                continue;
+                continue; // Si falla, pasa a la siguiente API
             }
         }
 
-        // Si después de recorrer las APIs no se encontró el paquete
-        if (!$data || (!isset($data['CODIGO']) && !isset($data['codigo']))) {
+        // Si no se encontró el paquete en ninguna API
+        if (!$data || (!$data['CODIGO'] && !$data['codigo'])) {
             session()->flash('error', 'No se encontró el paquete en los servicios externos.');
             return;
         }
 
-        // Normaliza los campos, teniendo en cuenta que pueden venir con nombres distintos
+        // Normaliza los campos
         $codigo       = $data['CODIGO']       ?? $data['codigo']       ?? null;
         $destinatario = $data['DESTINATARIO'] ?? $data['destinatario'] ?? null;
         $estado       = $data['ESTADO']       ?? $data['estado']       ?? null;
@@ -97,9 +102,7 @@ class Distribuicion extends Component
             return;
         }
 
-        // Aquí podrías agregar validaciones adicionales, por ejemplo, validar el estado
-
-        // Crea el paquete con estado "ASIGNADO"
+        // Crea el paquete con estado "ASIGNADO" y guarda el alias del sistema en el campo sys
         Paquete::create([
             'codigo'       => $codigo,
             'destinatario' => $destinatario,
@@ -108,16 +111,16 @@ class Distribuicion extends Component
             'peso'         => isset($peso) ? floatval($peso) : null,
             'accion'       => 'ASIGNADO',
             'user'         => auth()->user()->name,
+            'sys'          => $sistema_origen,
         ]);
 
-        session()->flash('message', 'Paquete encontrado y guardado correctamente.');
+        session()->flash('message', "Paquete encontrado y registrado correctamente desde el sistema: {$sistema_origen}.");
 
         // Actualiza la lista de paquetes con estado "ASIGNADO"
         $this->paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
             ->get();
     }
-
 
     public function eliminar($codigo)
     {
@@ -144,85 +147,94 @@ class Distribuicion extends Component
         $paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
             ->get();
-
+    
         // Si no hay paquetes asignados, generar un PDF en blanco
         if ($paquetes->isEmpty()) {
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
         } else {
             // Generar el PDF con los paquetes antes de actualizarlos
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
-
+    
             foreach ($paquetes as $paquete) {
-                // URLs de las APIs
-                $url_antigua = "http://172.65.10.52/api/updatePackage/{$paquete->codigo}";
-                $url_nueva = "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems";
-
-                // Datos para la API antigua
-                $data_antigua = [
-                    "ESTADO" => "CARTERO",
-                    "action" => "EN TRASCURSO",
-                    "user_id" => 86, // ID del usuario, puede ser dinámico si necesario
-                    "descripcion" => "Paquete Destinado por envío con Cartero de estado",
-                    "usercartero" => auth()->user()->name,
+                // Definir URLs según el origen del paquete
+                $api_urls = [
+                    'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
+                    'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+                    'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
                 ];
-
-                // Datos para la nueva API
-                $data_nueva = [
-                    "codigo" => $paquete->codigo,
-                    "estado" => 4, // Estado correspondiente en la API
-                    "user_id" => auth()->id(), // ID del usuario autenticado
-                    "observacion_entrega" => "", // Campo vacío según requerimiento
-                    "usercartero" => auth()->user()->name, // Nombre del cartero actual
+    
+                // Definir datos según el origen
+                $api_data = [
+                    'TRACKINGBO' => [
+                        "ESTADO" => "CARTERO",
+                        "action" => "EN TRASCURSO",
+                        "user_id" => 86, // ID del usuario, puede ser dinámico si necesario
+                        "descripcion" => "Paquete Destinado por envío con Cartero de estado",
+                        "usercartero" => auth()->user()->name,
+                    ],
+                    'EMS' => [
+                        "codigo" => $paquete->codigo,
+                        "estado" => 4, // Estado correspondiente en la API
+                        "user_id" => 6,
+                        "observacion_entrega" => "",
+                        "usercartero" => auth()->user()->name,
+                        "action" => "Asignar Cartero",
+                    ],
+                    'GESCON' => [
+                        "guia" => $paquete->codigo,
+                        "estado" => 2, // Estado correspondiente en la API
+                        "cartero_entrega_id" => 1,
+                        "entrega_observacion" => "",
+                        "usercartero" => auth()->user()->name,
+                        "action" => "Envio en Camino",
+                    ]
                 ];
-
+    
                 // Encabezados comunes
                 $headers = [
                     'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
                 ];
-
+    
                 try {
-                    // Solicitud a la API antigua
-                    $response_antigua = Http::withHeaders($headers)->put($url_antigua, $data_antigua);
-
-                    // Verificar si la solicitud a la API antigua fue exitosa
-                    if ($response_antigua->successful()) {
-                        Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la API antigua.");
+                    $origen = $paquete->sys; // Obtener el sistema desde el campo sys
+    
+                    // Si el origen es válido, realiza la solicitud directamente
+                    if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
+                        $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
+    
+                        // Verificar la respuesta de la API
+                        if ($response->successful()) {
+                            Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la API: {$origen}.");
+                        } else {
+                            Log::error("Error al actualizar el paquete {$paquete->codigo} en la API {$origen}: " . $response->body());
+                        }
                     } else {
-                        Log::error("Error al actualizar el paquete {$paquete->codigo} en la API antigua: " . $response_antigua->body());
-                    }
-
-                    // Solicitud a la nueva API
-                    $response_nueva = Http::withHeaders($headers)->put($url_nueva, $data_nueva);
-
-                    // Verificar si la solicitud a la nueva API fue exitosa
-                    if ($response_nueva->successful()) {
-                        Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la nueva API.");
-                    } else {
-                        Log::error("Error al actualizar el paquete {$paquete->codigo} en la nueva API: " . $response_nueva->body());
+                        Log::error("Origen no válido para el paquete {$paquete->codigo}: {$origen}");
                     }
                 } catch (\Exception $e) {
-                    Log::error("Error al conectar con las APIs para el paquete {$paquete->codigo}: " . $e->getMessage());
+                    Log::error("Error al conectar con la API {$origen} para el paquete {$paquete->codigo}: " . $e->getMessage());
                 }
             }
-
+    
             // Actualizar estado a "CARTERO" en la base de datos
             Paquete::where('user', auth()->user()->name)
                 ->where('accion', 'ASIGNADO')
                 ->update(['accion' => 'CARTERO']);
-
+    
             session()->flash('message', "Se actualizaron {$paquetes->count()} paquetes a 'CARTERO'.");
+    
         }
-
+    
         // Emitir un evento en el navegador para recargar la página
         $this->dispatch('pdf-descargado');
-
+    
         // Descargar el PDF generado
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
         }, 'ReporteEntrega.pdf');
-    }
+    }    
 
     public function render()
     {
