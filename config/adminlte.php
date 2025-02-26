@@ -319,7 +319,7 @@ return [
         [
             'text' => 'Gestion Usuarios',
             'icon' => 'fas fa-users',
-            // 'can'  => 'users.index',
+            'can'  => 'odin',
             'submenu' => [
                 [
                     'text' => 'Personal AGBC',
@@ -346,26 +346,30 @@ return [
         [
             'text' => 'Entregas Paqueteria',
             'icon' => 'fas fa-users',
-            // 'can'  => 'users.index',
+
             'submenu' => [
                 [
                     'text' => 'Distribuicion Paqueteria',
                     'url' => 'distribuicion',
+                    'can'  => 'paquetes.distribuicion',
                     'icon' => 'fas fa-user',
                 ],
                 [
                     'text' => 'Entregas Cartero',
                     'url' => 'entregas',
+                    'can'  => 'paquetes.entregas',
                     'icon' => 'fas fa-user',
                 ],
                 [
                     'text' => 'Despacho Cartero',
                     'url' => 'despacho',
+                    'can'  => 'paquetes.despacho',
                     'icon' => 'fas fa-user',
                 ],
                 [
                     'text' => 'Inventario Cartero',
                     'url' => 'inventario',
+                    'can'  => 'paquetes.inventario',
                     'icon' => 'fas fa-user',
                 ],
             ],
@@ -373,19 +377,18 @@ return [
         [
             'text' => 'Eventos',
             'url' => '/event',
-
             'icon' => 'fas fa-user',
         ],
         [
             'text' => 'Rendimiento',
             'url' => '/pulse',
-
+            'can'  => 'odin',
             'icon' => 'fas fa-user',
         ],
         [
             'text' => 'Logs',
             'url' => '/log-viewer',
-
+            'can'  => 'odin',
             'icon' => 'fas fa-user',
         ],
     ],

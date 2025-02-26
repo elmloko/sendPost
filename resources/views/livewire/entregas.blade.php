@@ -39,7 +39,9 @@
                         <th>Estado</th>
                         <th>Ciudad</th>
                         <th>Peso</th>
-                        <th>Acciones</th>
+                        @hasrole('Administrador|Cartero')
+                            <th>Acciones</th>
+                        @endhasrole
                     </tr>
                 </thead>
                 <tbody>
@@ -50,11 +52,13 @@
                             <td>{{ $p->accion }}</td>
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
-                            <td>
-                                <button class="btn btn-danger btn-sm" wire:click="openModal({{ $p->id }})">
-                                    Dar de baja
-                                </button>
-                            </td>
+                            @hasrole('Administrador|Cartero')
+                                <td>
+                                    <button class="btn btn-danger btn-sm" wire:click="openModal({{ $p->id }})">
+                                        Dar de baja
+                                    </button>
+                                </td>
+                            @endhasrole
                         </tr>
                     @empty
                         <tr>
@@ -149,5 +153,5 @@
             window.location.reload();
         });
     </script>
-    
+
 </div>
