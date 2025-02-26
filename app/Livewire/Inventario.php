@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Paquete;
+use App\Models\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 
@@ -87,6 +88,14 @@ class Inventario extends Component
                         $paquete->restore();
                         $paquete->accion = 'CARTERO';
                         $paquete->save();
+
+                        // Registrar el evento en la tabla Eventos
+                        Event::create([
+                            'action' => 'ALTA',
+                            'descripcion' => 'Paquete con alta de paqueteria',
+                            'codigo' => $paquete->codigo,
+                            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                        ]);
 
                         session()->flash('message', "El paquete {$codigo} fue dado de alta exitosamente desde el sistema {$origen}.");
                     } else {

@@ -19,6 +19,20 @@
 CREATE DATABASE IF NOT EXISTS `sendpost` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci */;
 USE `sendpost`;
 
+-- Volcando estructura para tabla sendpost.events
+CREATE TABLE IF NOT EXISTS `events` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `action` varchar(50) DEFAULT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `codigo` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `descripcion` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Volcando datos para la tabla sendpost.events: ~0 rows (aproximadamente)
+
 -- Volcando estructura para tabla sendpost.failed_jobs
 CREATE TABLE IF NOT EXISTS `failed_jobs` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -167,9 +181,9 @@ CREATE TABLE IF NOT EXISTS `pulse_aggregates` (
   KEY `pulse_aggregates_period_bucket_index` (`period`,`bucket`),
   KEY `pulse_aggregates_type_index` (`type`),
   KEY `pulse_aggregates_period_type_aggregate_bucket_index` (`period`,`type`,`aggregate`,`bucket`)
-) ENGINE=InnoDB AUTO_INCREMENT=3711 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3719 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Volcando datos para la tabla sendpost.pulse_aggregates: ~281 rows (aproximadamente)
+-- Volcando datos para la tabla sendpost.pulse_aggregates: ~279 rows (aproximadamente)
 INSERT INTO `pulse_aggregates` (`id`, `bucket`, `period`, `type`, `key`, `aggregate`, `value`, `count`) VALUES
 	(1642, 1739898720, 10080, 'user_request', '1', 'count', 8.00, NULL),
 	(1674, 1739908800, 10080, 'user_request', '1', 'count', 13.00, NULL),
@@ -426,7 +440,7 @@ INSERT INTO `pulse_aggregates` (`id`, `bucket`, `period`, `type`, `key`, `aggreg
 	(3631, 1740576900, 60, 'user_request', '1', 'count', 4.00, NULL),
 	(3632, 1740576600, 360, 'user_request', '1', 'count', 4.00, NULL),
 	(3633, 1740575520, 1440, 'user_request', '1', 'count', 4.00, NULL),
-	(3634, 1740574080, 10080, 'user_request', '1', 'count', 15.00, NULL),
+	(3634, 1740574080, 10080, 'user_request', '1', 'count', 17.00, NULL),
 	(3647, 1740577020, 60, 'user_request', '1', 'count', 4.00, NULL),
 	(3648, 1740576960, 360, 'user_request', '1', 'count', 11.00, NULL),
 	(3649, 1740576960, 1440, 'user_request', '1', 'count', 11.00, NULL),
@@ -451,7 +465,12 @@ INSERT INTO `pulse_aggregates` (`id`, `bucket`, `period`, `type`, `key`, `aggreg
 	(3688, 1740576960, 360, 'exception', '["Illuminate\\\\Database\\\\QueryException","app\\\\Http\\\\Controllers\\\\UserController.php:45"]', 'max', 1740577247.00, NULL),
 	(3689, 1740576960, 1440, 'exception', '["Illuminate\\\\Database\\\\QueryException","app\\\\Http\\\\Controllers\\\\UserController.php:45"]', 'max', 1740577247.00, NULL),
 	(3690, 1740574080, 10080, 'exception', '["Illuminate\\\\Database\\\\QueryException","app\\\\Http\\\\Controllers\\\\UserController.php:45"]', 'max', 1740577247.00, NULL),
-	(3691, 1740577260, 60, 'user_request', '1', 'count', 5.00, NULL);
+	(3691, 1740577260, 60, 'user_request', '1', 'count', 5.00, NULL),
+	(3711, 1740578880, 60, 'user_request', '1', 'count', 1.00, NULL),
+	(3712, 1740578760, 360, 'user_request', '1', 'count', 1.00, NULL),
+	(3713, 1740578400, 1440, 'user_request', '1', 'count', 2.00, NULL),
+	(3715, 1740579420, 60, 'user_request', '1', 'count', 1.00, NULL),
+	(3716, 1740579120, 360, 'user_request', '1', 'count', 1.00, NULL);
 
 -- Volcando estructura para tabla sendpost.pulse_entries
 CREATE TABLE IF NOT EXISTS `pulse_entries` (
@@ -466,9 +485,9 @@ CREATE TABLE IF NOT EXISTS `pulse_entries` (
   KEY `pulse_entries_type_index` (`type`),
   KEY `pulse_entries_key_hash_index` (`key_hash`),
   KEY `pulse_entries_timestamp_type_key_hash_value_index` (`timestamp`,`type`,`key_hash`,`value`)
-) ENGINE=InnoDB AUTO_INCREMENT=870 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=872 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Volcando datos para la tabla sendpost.pulse_entries: ~484 rows (aproximadamente)
+-- Volcando datos para la tabla sendpost.pulse_entries: ~491 rows (aproximadamente)
 INSERT INTO `pulse_entries` (`id`, `timestamp`, `type`, `key`, `value`) VALUES
 	(381, 1739891809, 'user_request', '1', NULL),
 	(382, 1739891815, 'user_request', '1', NULL),
@@ -958,7 +977,9 @@ INSERT INTO `pulse_entries` (`id`, `timestamp`, `type`, `key`, `value`) VALUES
 	(866, 1740577269, 'user_request', '1', NULL),
 	(867, 1740577280, 'user_request', '1', NULL),
 	(868, 1740577283, 'user_request', '1', NULL),
-	(869, 1740577304, 'user_request', '1', NULL);
+	(869, 1740577304, 'user_request', '1', NULL),
+	(870, 1740578912, 'user_request', '1', NULL),
+	(871, 1740579445, 'user_request', '1', NULL);
 
 -- Volcando estructura para tabla sendpost.pulse_values
 CREATE TABLE IF NOT EXISTS `pulse_values` (
@@ -1022,7 +1043,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `users_email_unique` (`email`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Volcando datos para la tabla sendpost.users: ~0 rows (aproximadamente)
+-- Volcando datos para la tabla sendpost.users: ~1 rows (aproximadamente)
 INSERT INTO `users` (`id`, `name`, `email`, `ci`, `email_verified_at`, `password`, `city`, `remember_token`, `created_at`, `updated_at`, `deleted_at`) VALUES
 	(1, 'Marco Antonio Espinoza Rojas', 'marco.espinoza@correos.gob.bo', NULL, NULL, '$2y$10$VOn55.vOVzJM1CaXAJu9WeI8IpfNSO1B0ngvH30tRxha1JdQVL9KG', 'LA PAZ', NULL, '2024-10-24 00:43:33', '2024-10-24 00:43:33', NULL),
 	(2, 'Leonardo Doria Medina Ochoa', 'leonardo.doriamedina@correos.gob.bo', 6727073, NULL, '$2y$10$1VDveoZDsNraHQDqAe/VMex73McizAxf4yLaBNXb04kRNiR63FXOy', 'LA PAZ', NULL, '2025-02-26 17:41:09', '2025-02-26 17:41:09', NULL);

@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Paquete;
+use App\Models\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -76,6 +77,14 @@ class Despacho extends Component
                         $paquete->accion = 'INTENTO';
                         $paquete->save();
 
+                        // Registrar el evento en la tabla Eventos
+                        Event::create([
+                            'action' => 'RETORNO',
+                            'descripcion' => 'Paquete devuelto por el cartero a ventanilla',
+                            'codigo' => $paquete->codigo,
+                            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                        ]);
+
                         session()->flash('message', "El paquete {$codigo} fue devuelto a ventanilla exitosamente usando la API {$origen}.");
                     } else {
                         session()->flash('error', "Error al devolver el paquete {$codigo} usando la API {$origen}: " . $response->body());
@@ -145,6 +154,14 @@ class Despacho extends Component
                         $paquete->accion = 'CARTERO';
                         $paquete->save();
 
+                        // Registrar el evento en la tabla Eventos
+                        Event::create([
+                            'action' => 'CORRECCION',
+                            'descripcion' => 'Paquete devuelto a inventario de cartero',
+                            'codigo' => $paquete->codigo,
+                            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                        ]);
+
                         session()->flash('message', "El paquete {$codigo} fue devuelto al cartero exitosamente usando la API {$origen}.");
                     } else {
                         session()->flash('error', "Error al devolver el paquete {$codigo} al cartero usando la API {$origen}: " . $response->body());
@@ -175,7 +192,7 @@ class Despacho extends Component
                 ->get();
         }
     }
-    
+
     public function render()
     {
         return view('livewire.despacho', ['paquetes' => $this->paquetes]);

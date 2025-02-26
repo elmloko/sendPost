@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Paquete;
+use App\Models\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
@@ -121,10 +122,27 @@ class Entregas extends Component
                         if ($validatedData['estado'] === 'ENTREGADO') {
                             $paquete->update(['accion' => 'ENTREGADO']); // Guardar como ENTREGADO en la DB
                             $paquete->delete(); // Soft delete
+
+                            // Registrar el evento en la tabla Eventos
+                            Event::create([
+                                'action' => 'ENTREGADO',
+                                'descripcion' => 'Paquete entregado por el cartero',
+                                'codigo' => $paquete->codigo,
+                                'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                            ]);
+
                         } elseif ($validatedData['estado'] === 'RETORNO') {
                             $paquete->update([
                                 'accion' => 'RETORNO',
                                 'observacion' => $validatedData['observacion'],
+                            ]);
+
+                            // Registrar el evento en la tabla Eventos
+                            Event::create([
+                                'action' => 'RETORNO',
+                                'descripcion' => 'Paquete con retorno a ventanilla',
+                                'codigo' => $paquete->codigo,
+                                'user_id' => auth()->id(), // Usa el ID del usuario autenticado
                             ]);
                         }
 

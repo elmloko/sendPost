@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\Paquete;
+use App\Models\Event;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\PDF;
@@ -126,6 +127,14 @@ class Distribuicion extends Component
 
         session()->flash('message', "Paquete encontrado y registrado correctamente desde el sistema: {$sistema_origen}.");
 
+        // Registrar el evento en la tabla Eventos
+        Event::create([
+            'action' => 'BUSCAR',
+            'descripcion' => 'Paquete Identificado por el Cartero',
+            'codigo' => $codigo,
+            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+        ]);
+
         // Actualiza la lista de paquetes con estado "ASIGNADO"
         $this->paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
@@ -157,6 +166,14 @@ class Distribuicion extends Component
             session()->flash('message', 'Paquete eliminado correctamente.');
         }
 
+        // Registrar el evento en la tabla Eventos
+        Event::create([
+            'action' => 'RETIRO',
+            'descripcion' => 'Paquete Apartado por el Cartero',
+            'codigo' => $codigo,
+            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+        ]);
+
         // Solo mostrar paquetes con estado "ASIGNADO"
         $this->paquetes = Paquete::where('user', auth()->user()->name)
             ->where('accion', 'ASIGNADO')
@@ -178,6 +195,14 @@ class Distribuicion extends Component
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
 
             foreach ($paquetes as $paquete) {
+                // Registrar el evento en la tabla Eventos
+                Event::create([
+                    'action' => 'ASIGNADO',
+                    'descripcion' => 'Paquete asignado por el Cartero para distribuicion',
+                    'codigo' => $paquete->codigo,
+                    'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                ]);
+                
                 // Definir URLs según el origen del paquete
                 $api_urls = [
                     'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
