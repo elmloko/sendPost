@@ -5,6 +5,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\CarteroController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\RoleHasPermissionController;
 use Illuminate\Support\Facades\Route;
 
@@ -73,6 +74,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/entregas', [CarteroController::class, 'getEntregas']);
     Route::get('/despacho', [CarteroController::class, 'getDespacho']);
     Route::get('/inventario', [CarteroController::class, 'getInventario']);
+
+    Route::get('/event', [EventController::class, 'getEvent']);
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
