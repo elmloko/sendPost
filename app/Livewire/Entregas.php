@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Auth;
 
 class Entregas extends Component
 {
-    public $codigo = '';  // Campo para la búsqueda
     use WithFileUploads;               // <-- Necesario para subir archivos
 
     public $codigo = '';      // Campo para la búsqueda
