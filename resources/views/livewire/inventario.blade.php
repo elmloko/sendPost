@@ -13,18 +13,33 @@
         </div>
     @endif
 
-    {{-- Formulario para buscar por código (opcional) --}}
     <div class="card mb-4">
         <div class="card-body">
-            <form wire:submit.prevent="buscar">
-                <div class="mb-3">
-                    <label for="codigo" class="form-label">Buscar paquete por código:</label>
-                    <input type="text" id="codigo" wire:model="codigo" class="form-control"
-                        placeholder="Ingrese el código del paquete"
-                        oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }">
+            <div class="row">
+                {{-- Columna para buscar paquete por código --}}
+                <div class="col-md-6 mb-3">
+                    <form wire:submit.prevent="buscar">
+                        <div class="mb-3">
+                            <label for="codigo" class="form-label">Buscar paquete por código:</label>
+                            <input type="text" id="codigo" wire:model="codigo" class="form-control"
+                                placeholder="Ingrese el código del paquete"
+                                oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+                    </form>
                 </div>
-                <button type="submit" class="btn btn-primary">Buscar</button>
-            </form>
+
+                {{-- Columna para exportar a Excel --}}
+                <div class="col-md-6 mb-3">
+                    <form wire:submit.prevent="exportarExcel">
+                        <div class="mb-3">
+                            <label for="fecha" class="form-label">Selecciona una fecha:</label>
+                            <input type="date" id="fecha" wire:model="fecha" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Exportar a Excel</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -41,6 +56,7 @@
                         <th>Destinatario</th>
                         <th>Ciudad</th>
                         <th>Peso</th>
+                        <th>Fecha Entrega</th>
                         @hasrole('Administrador')
                             <th>Acción</th>
                         @endhasrole
@@ -53,6 +69,7 @@
                             <td>{{ $p->destinatario }}</td>
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
+                            <td>{{ $p->deleted_at }}</td>
                             @hasrole('Administrador')
                                 <td>
                                     <button class="btn" style="background-color: #00CFFF; color: white;"
@@ -70,6 +87,7 @@
         </div>
     </div>
 </div>
+
 <script>
     document.addEventListener('pdf-descargado', function() {
         setTimeout(function() {

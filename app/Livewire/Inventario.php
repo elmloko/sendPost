@@ -7,11 +7,14 @@ use App\Models\Paquete;
 use App\Models\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
+use App\Exports\InventarioExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class Inventario extends Component
 {
     public $paquetes;
     public $codigo = '';
+    public $fecha;
 
     public function mount()
     {
@@ -112,6 +115,11 @@ class Inventario extends Component
         }
 
         $this->mount(); // Recargar la lista de paquetes
+    }
+
+    public function exportarExcel()
+    {
+        return Excel::download(new InventarioExport($this->fecha), 'paquetes_' . now()->format('Ymd_His') . '.xlsx');
     }
 
     public function render()
