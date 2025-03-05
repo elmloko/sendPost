@@ -16,15 +16,31 @@
     {{-- Formulario para buscar por código (opcional) --}}
     <div class="card mb-4">
         <div class="card-body">
-            <form wire:submit.prevent="buscar">
-                <div class="mb-3">
-                    <label for="codigo" class="form-label">Buscar paquete por código:</label>
-                    <input type="text" id="codigo" wire:model="codigo" class="form-control"
-                        placeholder="Ingrese el código del paquete"
-                        oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }">
+            <div class="row">
+                {{-- Columna para buscar paquete por código --}}
+                <div class="col-md-6 mb-3">
+                    <form wire:submit.prevent="buscar">
+                        <div class="mb-3">
+                            <label for="codigo" class="form-label">Buscar paquete por código:</label>
+                            <input type="text" id="codigo" wire:model="codigo" class="form-control"
+                                placeholder="Ingrese el código del paquete"
+                                oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Buscar</button>
+                    </form>
                 </div>
-                <button type="submit" class="btn btn-primary">Buscar</button>
-            </form>
+
+                {{-- Columna para exportar a Excel --}}
+                <div class="col-md-6 mb-3">
+                    <form wire:submit.prevent="exportarExcel">
+                        <div class="mb-3">
+                            <label for="fecha" class="form-label">Selecciona una fecha:</label>
+                            <input type="date" id="fecha" wire:model="fecha" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Exportar a Excel</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -42,6 +58,7 @@
                         <th>Ciudad</th>
                         <th>Peso</th>
                         <th>Observación</th>
+                        <th>Fecha Retorno</th>
                         @hasrole('Administrador|Encargado')
                             <th>Acción</th>
                         @endhasrole
@@ -55,6 +72,7 @@
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
                             <td>{{ $p->observacion }}</td>
+                            <td>{{ $p->updated_at }}</td>
                             @hasrole('Administrador|Encargado')
                                 <td>
                                     <button wire:click="devolverAVentanilla('{{ $p->codigo }}')" class="btn btn-warning">

@@ -8,11 +8,14 @@ use App\Models\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Exports\DespachoExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class Despacho extends Component
 {
     public $paquetes;
     public $codigo = '';
+    public $fecha;
 
     public function mount()
     {
@@ -191,6 +194,11 @@ class Despacho extends Component
                 ->where('codigo', 'LIKE', "%{$this->codigo}%")
                 ->get();
         }
+    }
+
+    public function exportarExcel()
+    {
+        return Excel::download(new DespachoExport($this->fecha), 'paquetes_' . now()->format('Ymd_His') . '.xlsx');
     }
 
     public function render()
