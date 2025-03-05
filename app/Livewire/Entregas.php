@@ -186,12 +186,12 @@ class Entregas extends Component
                         // **PUT A API LOCAL: `entregar-envio`**
                         try {
                             $datosLocal = [
-    "codigo"             => $paquete->codigo,
-    "estado"             => 5,
-    "firma_entrega"      => $this->firma, 
-    "observacion_entrega"=> $this->observacion_entrega,
-    "photo"              => $photoBase64, // <-- ¡IMPORTANTE!
-];
+                                "codigo"             => $paquete->codigo,
+                                "estado"             => 5,
+                                "firma_entrega"      => $this->firma,
+                                "observacion_entrega" => $this->observacion_entrega,
+                                "photo"              => $photoBase64, // <-- ¡IMPORTANTE!
+                            ];
 
 
                             $headersLocal = [
