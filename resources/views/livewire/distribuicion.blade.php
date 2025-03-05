@@ -13,22 +13,31 @@
         </div>
     @endif
 
-    {{-- Formulario para buscar por código --}}
+    {{-- Card para búsqueda y exportación --}}
     <div class="card mb-4">
         <div class="card-body">
             <form wire:submit.prevent="buscar">
-                <div class="mb-3">
-                    <label for="codigo" class="form-label">Código del paquete:</label>
-                    <input 
-                        type="text" 
-                        id="codigo" 
-                        wire:model="codigo" 
-                        class="form-control" 
-                        placeholder="Ingrese el código"
-                        oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }"
-                    >
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label for="codigo" class="form-label">Código del paquete:</label>
+                        <input 
+                            type="text"
+                            id="codigo"
+                            wire:model="codigo"
+                            class="form-control"
+                            placeholder="Ingrese el código"
+                            oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }"
+                        >
+                    </div>
+                    <div class="col-md-7 d-flex align-items-end justify-content-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            Buscar
+                        </button>
+                        <button class="btn btn-secondary" type="button" wire:click="exportExcel">
+                            Exportar a Excel
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Buscar</button>
             </form>
         </div>
     </div>
@@ -59,10 +68,12 @@
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
                             <td>
-                                <button class="btn btn-danger btn-sm" wire:click="eliminar('{{ $p->codigo }}')" onclick="return confirm('¿Estás seguro de eliminar este paquete?')">
+                                <button class="btn btn-danger btn-sm"
+                                        wire:click="eliminar('{{ $p->codigo }}')"
+                                        onclick="return confirm('¿Estás seguro de eliminar este paquete?')">
                                     Eliminar
                                 </button>
-                            </td>                            
+                            </td>
                         </tr>
                     @empty
                         <tr>
@@ -81,13 +92,12 @@
             </div>
         </div>
     </div>
-   
 </div>
+
 <script>
     document.addEventListener('pdf-descargado', function () {
         setTimeout(function () {
             location.reload();
-        }, 500); // Espera 1 segundo antes de recargar para asegurar la descarga del PDF
+        }, 500);
     });
 </script>
-

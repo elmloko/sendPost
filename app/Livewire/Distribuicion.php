@@ -202,7 +202,7 @@ class Distribuicion extends Component
                     'codigo' => $paquete->codigo,
                     'user_id' => auth()->id(), // Usa el ID del usuario autenticado
                 ]);
-                
+
                 // Definir URLs según el origen del paquete
                 $api_urls = [
                     'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
@@ -278,6 +278,18 @@ class Distribuicion extends Component
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
         }, 'ReporteEntrega.pdf');
+    }
+
+    public function exportExcel()
+    {
+        // Puedes recibir la fecha desde el request o usar null si no es necesario filtrar
+        $fecha = null; // O por ejemplo: $this->fechaExportacion
+    
+        $export = new \App\Exports\DistribuicionExport($fecha);
+    
+        return response()->streamDownload(function () use ($export) {
+            echo \Maatwebsite\Excel\Facades\Excel::raw($export, \Maatwebsite\Excel\Excel::XLSX);
+        }, 'ReportePaquetes.xlsx');
     }
 
     public function render()
