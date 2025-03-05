@@ -1,12 +1,12 @@
 <div class="container-fluid p-4">
     {{-- Mensajes de éxito o error --}}
-    @if(session()->has('message'))
+    @if (session()->has('message'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('message') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-    @if(session()->has('error'))
+    @if (session()->has('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -20,14 +20,9 @@
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label for="codigo" class="form-label">Código del paquete:</label>
-                        <input 
-                            type="text"
-                            id="codigo"
-                            wire:model="codigo"
-                            class="form-control"
+                        <input type="text" id="codigo" wire:model="codigo" class="form-control"
                             placeholder="Ingrese el código"
-                            oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }"
-                        >
+                            oninput="if(this.value.length == 13){ $wire.call('buscar'); $wire.set('codigo',''); }">
                     </div>
                     <div class="col-md-7 d-flex align-items-end justify-content-end">
                         <button type="submit" class="btn btn-primary me-2">
@@ -56,6 +51,9 @@
                         <th>Estado</th>
                         <th>Ciudad</th>
                         <th>Peso</th>
+                        @hasrole('Administrador')
+                            <th>Usuario</th>
+                        @endhasrole
                         <th>Acción</th>
                     </tr>
                 </thead>
@@ -67,10 +65,12 @@
                             <td>{{ $p->accion }}</td>
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
+                            @hasrole('Administrador')
+                                <td>{{ $p->user }}</td>
+                            @endhasrole
                             <td>
-                                <button class="btn btn-danger btn-sm"
-                                        wire:click="eliminar('{{ $p->codigo }}')"
-                                        onclick="return confirm('¿Estás seguro de eliminar este paquete?')">
+                                <button class="btn btn-danger btn-sm" wire:click="eliminar('{{ $p->codigo }}')"
+                                    onclick="return confirm('¿Estás seguro de eliminar este paquete?')">
                                     Eliminar
                                 </button>
                             </td>
@@ -83,8 +83,7 @@
                 </tbody>
             </table>
             <div class="d-flex justify-content-end mt-3">
-                <button id="boton-entrega" class="btn btn-success"
-                    wire:click="asignarACartero()" 
+                <button id="boton-entrega" class="btn btn-success" wire:click="asignarACartero()"
                     wire:loading.attr="disabled"
                     onclick="return confirm('¿Estás seguro de recoger todos los paquetes?')">
                     Iniciar a entregar
@@ -95,8 +94,8 @@
 </div>
 
 <script>
-    document.addEventListener('pdf-descargado', function () {
-        setTimeout(function () {
+    document.addEventListener('pdf-descargado', function() {
+        setTimeout(function() {
             location.reload();
         }, 500);
     });

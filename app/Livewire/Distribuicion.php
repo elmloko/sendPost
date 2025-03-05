@@ -16,12 +16,23 @@ class Distribuicion extends Component
     public $codigo;
     public $paquetes = [];
 
+    // Función auxiliar para verificar si el usuario es Administrador
+    protected function isAdmin()
+    {
+        return auth()->user()->hasRole('Administrador');
+    }
+
     public function mount()
     {
-        // Cargar solo los paquetes asignados al usuario y con estado "ASIGNADO"
-        $this->paquetes = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'ASIGNADO')
-            ->get();
+        if ($this->isAdmin()) {
+            // Administrador: mostrar todos los paquetes con estado ASIGNADO
+            $this->paquetes = Paquete::where('accion', 'ASIGNADO')->get();
+        } else {
+            // Otros roles: mostrar solo los paquetes asignados al usuario
+            $this->paquetes = Paquete::where('user', auth()->user()->name)
+                ->where('accion', 'ASIGNADO')
+                ->get();
+        }
     }
 
     public function buscar()
@@ -30,10 +41,14 @@ class Distribuicion extends Component
             'codigo' => 'required|string',
         ]);
 
-        // Busca si ya existe un paquete con este código y estado INTENTO
-        $paqueteExistente = Paquete::where('codigo', $this->codigo)
-            ->where('user', auth()->user()->name)
-            ->first();
+        // Buscar paquete existente: si es Administrador, no filtrar por usuario; para otros, sí
+        if ($this->isAdmin()) {
+            $paqueteExistente = Paquete::where('codigo', $this->codigo)->first();
+        } else {
+            $paqueteExistente = Paquete::where('codigo', $this->codigo)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
 
         // Si el paquete existe y el intento es 3, no se permite registrar más
         if ($paqueteExistente && $paqueteExistente->intento >= 3) {
@@ -87,7 +102,7 @@ class Distribuicion extends Component
         }
 
         // Si no se encontró el paquete en ninguna API
-        if (!$data || (!$data['CODIGO'] && !$data['codigo'])) {
+        if (!$data || (!(isset($data['CODIGO']) || isset($data['codigo'])))) {
             session()->flash('error', 'No se encontró el paquete en los servicios externos.');
             return;
         }
@@ -132,20 +147,28 @@ class Distribuicion extends Component
             'action' => 'BUSCAR',
             'descripcion' => 'Paquete Identificado por el Cartero',
             'codigo' => $codigo,
-            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+            'user_id' => auth()->id(),
         ]);
 
         // Actualiza la lista de paquetes con estado "ASIGNADO"
-        $this->paquetes = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'ASIGNADO')
-            ->get();
+        if ($this->isAdmin()) {
+            $this->paquetes = Paquete::where('accion', 'ASIGNADO')->get();
+        } else {
+            $this->paquetes = Paquete::where('user', auth()->user()->name)
+                ->where('accion', 'ASIGNADO')
+                ->get();
+        }
     }
 
     public function eliminar($codigo)
     {
-        $paquete = Paquete::where('codigo', $codigo)
-            ->where('user', auth()->user()->name)
-            ->first();
+        if ($this->isAdmin()) {
+            $paquete = Paquete::where('codigo', $codigo)->first();
+        } else {
+            $paquete = Paquete::where('codigo', $codigo)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
 
         if (!$paquete) {
             session()->flash('error', 'No se encontró el paquete o no tienes permiso para eliminarlo.');
@@ -171,71 +194,71 @@ class Distribuicion extends Component
             'action' => 'RETIRO',
             'descripcion' => 'Paquete Apartado por el Cartero',
             'codigo' => $codigo,
-            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+            'user_id' => auth()->id(),
         ]);
 
-        // Solo mostrar paquetes con estado "ASIGNADO"
-        $this->paquetes = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'ASIGNADO')
-            ->get();
+        if ($this->isAdmin()) {
+            $this->paquetes = Paquete::where('accion', 'ASIGNADO')->get();
+        } else {
+            $this->paquetes = Paquete::where('user', auth()->user()->name)
+                ->where('accion', 'ASIGNADO')
+                ->get();
+        }
     }
 
     public function asignarACartero()
     {
-        // Obtener paquetes con estado "ASIGNADO" antes de actualizarlos
-        $paquetes = Paquete::where('user', auth()->user()->name)
-            ->where('accion', 'ASIGNADO')
-            ->get();
+        if ($this->isAdmin()) {
+            $paquetes = Paquete::where('accion', 'ASIGNADO')->get();
+        } else {
+            $paquetes = Paquete::where('user', auth()->user()->name)
+                ->where('accion', 'ASIGNADO')
+                ->get();
+        }
 
-        // Si no hay paquetes asignados, generar un PDF en blanco
         if ($paquetes->isEmpty()) {
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
         } else {
-            // Generar el PDF con los paquetes antes de actualizarlos
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
 
             foreach ($paquetes as $paquete) {
-                // Registrar el evento en la tabla Eventos
                 Event::create([
                     'action' => 'ASIGNADO',
                     'descripcion' => 'Paquete asignado por el Cartero para distribuicion',
                     'codigo' => $paquete->codigo,
-                    'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                    'user_id' => auth()->id(),
                 ]);
 
-                // Definir URLs según el origen del paquete
                 $api_urls = [
                     'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
                     'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
                     'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
                 ];
 
-                // Definir datos según el origen
                 $api_data = [
                     'TRACKINGBO' => [
                         "ESTADO" => "CARTERO",
                         "action" => "EN TRASCURSO",
-                        "user_id" => 86, // ID del usuario, puede ser dinámico si necesario
+                        "user_id" => 86,
                         "descripcion" => "Paquete Destinado por envío con Cartero de estado",
                         "usercartero" => auth()->user()->name,
                     ],
                     'EMS' => [
                         "codigo" => $paquete->codigo,
-                        "estado" => 4, // Estado correspondiente en la API
+                        "estado" => 4,
                         "observacion_entrega" => "",
                         "usercartero" => auth()->user()->name,
                         "action" => "Asignar Cartero",
                     ],
                     'GESCON' => [
                         "guia" => $paquete->codigo,
-                        "estado" => 2, // Estado correspondiente en la API
+                        "estado" => 2,
                         "entrega_observacion" => "",
                         "usercartero" => auth()->user()->name,
                         "action" => "Envio en Camino",
                     ]
                 ];
 
-                // Encabezados comunes
                 $headers = [
                     'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
                     'Accept' => 'application/json',
@@ -243,13 +266,9 @@ class Distribuicion extends Component
                 ];
 
                 try {
-                    $origen = $paquete->sys; // Obtener el sistema desde el campo sys
-
-                    // Si el origen es válido, realiza la solicitud directamente
+                    $origen = $paquete->sys;
                     if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
                         $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
-
-                        // Verificar la respuesta de la API
                         if ($response->successful()) {
                             Log::info("Paquete {$paquete->codigo} actualizado exitosamente en la API: {$origen}.");
                         } else {
@@ -263,18 +282,19 @@ class Distribuicion extends Component
                 }
             }
 
-            // Actualizar estado a "CARTERO" en la base de datos
-            Paquete::where('user', auth()->user()->name)
-                ->where('accion', 'ASIGNADO')
-                ->update(['accion' => 'CARTERO']);
+            if ($this->isAdmin()) {
+                Paquete::where('accion', 'ASIGNADO')->update(['accion' => 'CARTERO']);
+            } else {
+                Paquete::where('user', auth()->user()->name)
+                    ->where('accion', 'ASIGNADO')
+                    ->update(['accion' => 'CARTERO']);
+            }
 
             session()->flash('message', "Se actualizaron {$paquetes->count()} paquetes a 'CARTERO'.");
         }
 
-        // Emitir un evento en el navegador para recargar la página
         $this->dispatch('pdf-descargado');
 
-        // Descargar el PDF generado
         return response()->streamDownload(function () use ($pdf) {
             echo $pdf->stream();
         }, 'ReporteEntrega.pdf');
@@ -282,9 +302,7 @@ class Distribuicion extends Component
 
     public function exportExcel()
     {
-        // Puedes recibir la fecha desde el request o usar null si no es necesario filtrar
-        $fecha = null; // O por ejemplo: $this->fechaExportacion
-    
+        $fecha = null;
         $export = new \App\Exports\DistribuicionExport($fecha);
     
         return response()->streamDownload(function () use ($export) {

@@ -60,6 +60,7 @@
                         <th>Observación</th>
                         <th>Fecha Retorno</th>
                         @hasrole('Administrador|Encargado')
+                            <th>Usuario</th>
                             <th>Acción</th>
                         @endhasrole
                     </tr>
@@ -74,6 +75,7 @@
                             <td>{{ $p->observacion }}</td>
                             <td>{{ $p->updated_at }}</td>
                             @hasrole('Administrador|Encargado')
+                                <td>{{ $p->user }}</td>
                                 <td>
                                     <button wire:click="devolverAVentanilla('{{ $p->codigo }}')" class="btn btn-warning">
                                         Devolver a Ventanilla

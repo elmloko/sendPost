@@ -39,6 +39,9 @@
                         <th>Estado</th>
                         <th>Ciudad</th>
                         <th>Peso</th>
+                        @hasrole('Administrador|Encargado')
+                            <th>Usuario</th>
+                        @endhasrole
                         @hasrole('Administrador|Cartero')
                             <th>Acciones</th>
                         @endhasrole
@@ -52,6 +55,9 @@
                             <td>{{ $p->accion }}</td>
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
+                            @hasrole('Administrador|Encargado')
+                                <td>{{ $p->user }}</td>
+                            @endhasrole
                             @hasrole('Administrador|Cartero')
                                 <td>
                                     <button class="btn btn-danger btn-sm" wire:click="openModal({{ $p->id }})">

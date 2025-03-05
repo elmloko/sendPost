@@ -16,30 +16,67 @@ class Inventario extends Component
     public $codigo = '';
     public $fecha;
 
+    // Método auxiliar para verificar si el usuario es Administrador
+    protected function isAdmin()
+    {
+        return auth()->user()->hasAnyRole(['Administrador', 'Encargado']);
+    }    
+
     public function mount()
     {
-        // Obtener solo los paquetes eliminados con estado ENTREGADO
-        $this->paquetes = Paquete::onlyTrashed()
-            ->where('accion', 'ENTREGADO')
-            ->get();
+        if ($this->isAdmin()) {
+            // Administrador: mostrar todos los paquetes eliminados con estado ENTREGADO
+            $this->paquetes = Paquete::onlyTrashed()
+                ->where('accion', 'ENTREGADO')
+                ->get();
+        } else {
+            // Otros roles: mostrar solo los paquetes eliminados que pertenecen al usuario
+            $this->paquetes = Paquete::onlyTrashed()
+                ->where('accion', 'ENTREGADO')
+                ->where('user', auth()->user()->name)
+                ->get();
+        }
     }
 
     public function buscar()
     {
-        // Si el campo de código está vacío, mostrar todos los paquetes en estado 'RETORNO'
         if (empty($this->codigo)) {
-            $this->paquetes = Paquete::where('accion', 'ENTREGADO')->get();
+            if ($this->isAdmin()) {
+                $this->paquetes = Paquete::onlyTrashed()
+                    ->where('accion', 'ENTREGADO')
+                    ->get();
+            } else {
+                $this->paquetes = Paquete::onlyTrashed()
+                    ->where('accion', 'ENTREGADO')
+                    ->where('user', auth()->user()->name)
+                    ->get();
+            }
         } else {
-            // Filtrar los paquetes que coincidan con el código ingresado
-            $this->paquetes = Paquete::onlyTrashed('accion', 'ENTREGADO')
-                ->where('codigo', 'LIKE', "%{$this->codigo}%")
-                ->get();
+            if ($this->isAdmin()) {
+                $this->paquetes = Paquete::onlyTrashed()
+                    ->where('accion', 'ENTREGADO')
+                    ->where('codigo', 'LIKE', "%{$this->codigo}%")
+                    ->get();
+            } else {
+                $this->paquetes = Paquete::onlyTrashed()
+                    ->where('accion', 'ENTREGADO')
+                    ->where('codigo', 'LIKE', "%{$this->codigo}%")
+                    ->where('user', auth()->user()->name)
+                    ->get();
+            }
         }
     }
 
     public function darAlta($codigo)
     {
-        $paquete = Paquete::onlyTrashed()->where('codigo', $codigo)->first();
+        if ($this->isAdmin()) {
+            $paquete = Paquete::onlyTrashed()->where('codigo', $codigo)->first();
+        } else {
+            $paquete = Paquete::onlyTrashed()
+                ->where('codigo', $codigo)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
 
         if ($paquete) {
             // Definir las URLs y datos según el sistema de origen
@@ -97,7 +134,7 @@ class Inventario extends Component
                             'action' => 'ALTA',
                             'descripcion' => 'Paquete con alta de paqueteria',
                             'codigo' => $paquete->codigo,
-                            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                            'user_id' => auth()->id(),
                         ]);
 
                         session()->flash('message', "El paquete {$codigo} fue dado de alta exitosamente desde el sistema {$origen}.");

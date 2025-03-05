@@ -17,14 +17,34 @@ class Despacho extends Component
     public $codigo = '';
     public $fecha;
 
+    // Método auxiliar para verificar si el usuario tiene rol de Administrador
+    protected function isAdmin()
+    {
+        return auth()->user()->hasAnyRole(['Administrador', 'Encargado']);
+    }    
+
     public function mount()
     {
-        $this->paquetes = Paquete::where('accion', 'RETORNO')->get();
+        if ($this->isAdmin()) {
+            // Si es Administrador, se muestran todos los paquetes con estado 'RETORNO'
+            $this->paquetes = Paquete::where('accion', 'RETORNO')->get();
+        } else {
+            // Para otros roles, se muestran solo los paquetes asignados al usuario
+            $this->paquetes = Paquete::where('accion', 'RETORNO')
+                ->where('user', auth()->user()->name)
+                ->get();
+        }
     }
 
     public function devolverAVentanilla($codigo)
     {
-        $paquete = Paquete::where('codigo', $codigo)->first();
+        if ($this->isAdmin()) {
+            $paquete = Paquete::where('codigo', $codigo)->first();
+        } else {
+            $paquete = Paquete::where('codigo', $codigo)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
 
         if ($paquete) {
             // Definir URLs según el origen del paquete
@@ -39,21 +59,21 @@ class Despacho extends Component
                 'TRACKINGBO' => [
                     "ESTADO" => "VENTANILLA",
                     "action" => "DEVUELTO",
-                    "user_id" => 86, // ID del usuario, puede ser dinámico si necesario
+                    "user_id" => 86,
                     "descripcion" => "Paquete Devuelto a Oficina Postal Regional.",
                     "OBSERVACIONES" => "",
                     "usercartero" => Auth::user()->name,
                 ],
                 'EMS' => [
                     "codigo" => $paquete->codigo,
-                    "estado" => 3, // Estado correspondiente para devolución en EMS
+                    "estado" => 3,
                     "observacion_entrega" => "Paquete Devuelto a Oficina Postal Regional.",
                     "usercartero" => Auth::user()->name,
                     "action" => "Devuelto a Ventanilla",
                 ],
                 'GESCON' => [
                     "guia" => $paquete->codigo,
-                    "estado" => 5, // Estado correspondiente para devolución en GESCON
+                    "estado" => 5,
                     "cartero_entrega_id" => Auth::id(),
                     "entrega_observacion" => "Paquete Devuelto a Oficina Postal Regional.",
                     "usercartero" => Auth::user()->name,
@@ -71,7 +91,6 @@ class Despacho extends Component
             try {
                 $origen = $paquete->sys; // Obtener el origen desde el campo sys
 
-                // Verifica si el origen es válido y realiza la solicitud a la API correspondiente
                 if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
                     $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
 
@@ -85,7 +104,7 @@ class Despacho extends Component
                             'action' => 'RETORNO',
                             'descripcion' => 'Paquete devuelto por el cartero a ventanilla',
                             'codigo' => $paquete->codigo,
-                            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                            'user_id' => auth()->id(),
                         ]);
 
                         session()->flash('message', "El paquete {$codigo} fue devuelto a ventanilla exitosamente usando la API {$origen}.");
@@ -108,7 +127,13 @@ class Despacho extends Component
 
     public function devolverACartero($codigo)
     {
-        $paquete = Paquete::where('codigo', $codigo)->first();
+        if ($this->isAdmin()) {
+            $paquete = Paquete::where('codigo', $codigo)->first();
+        } else {
+            $paquete = Paquete::where('codigo', $codigo)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
 
         if ($paquete) {
             $api_urls = [
@@ -123,20 +148,20 @@ class Despacho extends Component
                     "action" => "ESTADO",
                     "user_id" => 86,
                     "descripcion" => "Correcion de Estado para Cartero",
-                    "usercartero" => auth()->user()->name,
+                    "usercartero" => Auth::user()->name,
                 ],
                 'EMS' => [
                     "codigo" => $paquete->codigo,
                     "estado" => 4,
                     "observacion_entrega" => "",
-                    "usercartero" => auth()->user()->name,
+                    "usercartero" => Auth::user()->name,
                     "action" => "Correcion de Estado para Cartero",
                 ],
                 'GESCON' => [
                     "guia" => $paquete->codigo,
                     "estado" => 2,
                     "entrega_observacion" => "",
-                    "usercartero" => auth()->user()->name,
+                    "usercartero" => Auth::user()->name,
                     "action" => "Correcion de Estado para Cartero",
                 ]
             ];
@@ -162,7 +187,7 @@ class Despacho extends Component
                             'action' => 'CORRECCION',
                             'descripcion' => 'Paquete devuelto a inventario de cartero',
                             'codigo' => $paquete->codigo,
-                            'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                            'user_id' => auth()->id(),
                         ]);
 
                         session()->flash('message', "El paquete {$codigo} fue devuelto al cartero exitosamente usando la API {$origen}.");
@@ -185,14 +210,25 @@ class Despacho extends Component
 
     public function buscar()
     {
-        // Si el campo de código está vacío, mostrar todos los paquetes en estado 'RETORNO'
         if (empty($this->codigo)) {
-            $this->paquetes = Paquete::where('accion', 'RETORNO')->get();
+            if ($this->isAdmin()) {
+                $this->paquetes = Paquete::where('accion', 'RETORNO')->get();
+            } else {
+                $this->paquetes = Paquete::where('accion', 'RETORNO')
+                    ->where('user', auth()->user()->name)
+                    ->get();
+            }
         } else {
-            // Filtrar los paquetes que coincidan con el código ingresado
-            $this->paquetes = Paquete::where('accion', 'RETORNO')
-                ->where('codigo', 'LIKE', "%{$this->codigo}%")
-                ->get();
+            if ($this->isAdmin()) {
+                $this->paquetes = Paquete::where('accion', 'RETORNO')
+                    ->where('codigo', 'LIKE', "%{$this->codigo}%")
+                    ->get();
+            } else {
+                $this->paquetes = Paquete::where('accion', 'RETORNO')
+                    ->where('codigo', 'LIKE', "%{$this->codigo}%")
+                    ->where('user', auth()->user()->name)
+                    ->get();
+            }
         }
     }
 

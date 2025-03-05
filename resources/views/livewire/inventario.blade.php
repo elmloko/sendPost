@@ -57,6 +57,9 @@
                         <th>Ciudad</th>
                         <th>Peso</th>
                         <th>Fecha Entrega</th>
+                        @hasrole('Administrador|Encargado')
+                            <th>Usuario</th>
+                        @endhasrole
                         @hasrole('Administrador')
                             <th>Acción</th>
                         @endhasrole
@@ -71,6 +74,7 @@
                             <td>{{ $p->peso }}</td>
                             <td>{{ $p->deleted_at }}</td>
                             @hasrole('Administrador')
+                                <td>{{ $p->user }}</td>
                                 <td>
                                     <button class="btn" style="background-color: #00CFFF; color: white;"
                                         wire:click="darAlta('{{ $p->codigo }}')">ALTA</button>

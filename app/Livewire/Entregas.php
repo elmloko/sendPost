@@ -13,17 +13,27 @@ class Entregas extends Component
 {
     public $codigo = '';  // Campo para la búsqueda
     public $paquetes = [];
-
-    // Variables para el modal
     public $showModal = false;
     public $selectedPaquete;
     public $estado;
     public $observacion;
 
+    // Método auxiliar para verificar si el usuario tiene rol de Administrador
+    protected function isAdmin()
+    {
+        return auth()->user()->hasAnyRole(['Administrador', 'Encargado']);
+    }   
+
     public function mount()
     {
-        // Solo mostrar paquetes con estado "CARTERO"
-        $this->paquetes = Paquete::where('accion', 'CARTERO')->get();
+        // Mostrar paquetes con estado "CARTERO"
+        if ($this->isAdmin()) {
+            $this->paquetes = Paquete::where('accion', 'CARTERO')->get();
+        } else {
+            $this->paquetes = Paquete::where('accion', 'CARTERO')
+                ->where('user', auth()->user()->name)
+                ->get();
+        }
     }
 
     public function buscar()
@@ -32,12 +42,13 @@ class Entregas extends Component
             'codigo' => 'nullable|string',
         ]);
 
-        // Filtrar los paquetes con estado "CARTERO" y opcionalmente por código
-        $this->paquetes = Paquete::where('accion', 'CARTERO')
-            ->when($this->codigo, function ($query) {
-                $query->where('codigo', 'like', "%{$this->codigo}%");
-            })
-            ->get();
+        $query = Paquete::where('accion', 'CARTERO');
+        if (!$this->isAdmin()) {
+            $query->where('user', auth()->user()->name);
+        }
+        $this->paquetes = $query->when($this->codigo, function ($query) {
+            $query->where('codigo', 'like', "%{$this->codigo}%");
+        })->get();
     }
 
     // Método para abrir el modal y asignar el paquete seleccionado
@@ -64,7 +75,13 @@ class Entregas extends Component
             'observacion' => 'required_if:estado,RETORNO',
         ]);
 
-        $paquete = Paquete::find($this->selectedPaquete);
+        if ($this->isAdmin()) {
+            $paquete = Paquete::find($this->selectedPaquete);
+        } else {
+            $paquete = Paquete::where('id', $this->selectedPaquete)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
 
         if ($paquete) {
             // Definir las URLs de las APIs según el origen del paquete
@@ -128,9 +145,8 @@ class Entregas extends Component
                                 'action' => 'ENTREGADO',
                                 'descripcion' => 'Paquete entregado por el cartero',
                                 'codigo' => $paquete->codigo,
-                                'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                                'user_id' => auth()->id(),
                             ]);
-
                         } elseif ($validatedData['estado'] === 'RETORNO') {
                             $paquete->update([
                                 'accion' => 'RETORNO',
@@ -142,7 +158,7 @@ class Entregas extends Component
                                 'action' => 'RETORNO',
                                 'descripcion' => 'Paquete con retorno a ventanilla',
                                 'codigo' => $paquete->codigo,
-                                'user_id' => auth()->id(), // Usa el ID del usuario autenticado
+                                'user_id' => auth()->id(),
                             ]);
                         }
 
