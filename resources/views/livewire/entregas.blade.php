@@ -20,7 +20,7 @@
                 <div class="mb-3">
                     <label for="codigo" class="form-label">Código del paquete:</label>
                     <input type="text" id="codigo" wire:model="codigo" class="form-control"
-                        placeholder="Ingrese el código y presione Enter">
+                           placeholder="Ingrese el código y presione Enter">
                 </div>
                 <button type="submit" class="btn btn-primary">Buscar</button>
             </form>
@@ -82,7 +82,13 @@
             <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                 <div class="modal-content border-primary shadow-lg">
                     <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">Dar de baja {{ $p->codigo }}</h5>
+                        <!-- Muestra el código del paquete -->
+                        @php
+                            // Intentamos obtener el paquete actual para mostrar su código en el título
+                            $modalPaquete = $paquetes->where('id', $selectedPaquete)->first();
+                            $codigoPaquete = $modalPaquete ? $modalPaquete->codigo : '';
+                        @endphp
+                        <h5 class="modal-title">Dar de baja {{ $codigoPaquete }}</h5>
                         <button type="button" class="btn-close btn-close-white" wire:click="closeModal"></button>
                     </div>
                     <div class="modal-body">
@@ -90,7 +96,7 @@
                             <div class="mb-3">
                                 <label for="estado" class="form-label fw-bold">Estado</label>
                                 <select id="estado" wire:model="estado" onchange="toggleObservacion()"
-                                    class="form-select">
+                                        class="form-select">
                                     <option value="">Seleccione un estado</option>
                                     <option value="ENTREGADO">ENTREGADO</option>
                                     <option value="RETORNO">RETORNO</option>
@@ -99,6 +105,7 @@
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
+
                             <!-- Contenedor de observaciones, oculto por defecto -->
                             <div class="mb-3" id="observacionContainer" style="display: none;">
                                 <label for="observacion" class="form-label fw-bold">Observaciones</label>
@@ -126,11 +133,71 @@
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
+ <!-- Observación general -->
+ <div class="mb-3">
+    <label for="observacion_entrega" class="form-label fw-bold">Observación de Entrega</label>
+    <textarea id="observacion_entrega" wire:model="observacion_entrega" class="form-control" rows="2"></textarea>
+    @error('observacion_entrega')
+        <span class="text-danger">{{ $message }}</span>
+    @enderror
+</div>
+                            <!-- Sección de firma -->
+                            <div class="mb-3">
+                                <label for="firma" class="form-label fw-bold">Firma</label>
+                                <!-- Input oculto donde se almacena la firma en base64 -->
+                                <input type="hidden" wire:model="firma" id="inputbase64">
+
+                                <!-- Lienzo de la firma -->
+                                <div class="text-center">
+                                    <canvas id="canvas"
+                                            class="border border-secondary rounded bg-white w-100"
+                                            style="max-width: 100%; height: auto;"
+                                            width="600"
+                                            height="250">
+                                    </canvas>
+                                </div>
+
+                                <!-- Botones para guardar y limpiar la firma -->
+                                <div class="mt-2 text-center">
+                                    <button type="button" id="guardar" class="btn btn-primary me-2">
+                                        Guardar Firma
+                                    </button>
+                                    <button type="button" id="limpiar" class="btn btn-secondary">
+                                        Limpiar
+                                    </button>
+                                </div>
+                                @error('firma')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            <div class="mb-3">
+                                <label for="photo" class="form-label fw-bold">Imagen (opcional)</label>
+                                <input type="file" wire:model="photo" id="photo" class="form-control">
+                                @error('photo')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+                            
+                            <!-- Previsualización de la imagen -->
+                            @if ($photo)
+                                <div class="mb-3 text-center">
+                                    <img src="{{ $photo->temporaryUrl() }}" alt="Previsualización" class="img-thumbnail mt-2" style="max-width: 200px;">
+                                </div>
+                            @endif
+                            <!-- Fin sección firma -->
+
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-outline-secondary"
-                                    wire:click="closeModal">Cancelar</button>
-                                <button type="submit" class="btn btn-success">Guardar</button>
+                                        wire:click="closeModal">
+                                    Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    Guardar
+                                </button>
                             </div>
+                            <!-- Campo para subir la imagen -->
+
+
                         </form>
                     </div>
                 </div>
@@ -138,26 +205,63 @@
         </div>
     @endif
 
-    <script>
-        function toggleObservacion() {
-            var estadoSelect = document.getElementById('estado');
-            var observacionContainer = document.getElementById('observacionContainer');
-
-            if (estadoSelect.value === 'RETORNO') {
-                observacionContainer.style.display = 'block';
-            } else {
-                observacionContainer.style.display = 'none';
-            }
-        }
-        // Ejecuta la función cuando se cargue la página o el modal
-        document.addEventListener('DOMContentLoaded', function() {
-            toggleObservacion();
-        });
-    </script>
-    <script>
-        window.addEventListener('reloadPage', event => {
-            window.location.reload();
-        });
-    </script>
-
+  
 </div>
+ <!-- Librería SignaturePad -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.0/dist/signature_pad.umd.min.js"></script>
+
+<script>
+    // Declaramos variables globales
+    let signaturePad;
+    let canvas;
+    let inputBase64;
+
+    window.addEventListener('initFirma', function () {
+        // Esperamos a que Livewire pinte el modal:
+        setTimeout(() => {
+            canvas = document.getElementById('canvas');
+            if (!canvas) return; // Si no se encuentra, salimos
+
+            // Recomendado para permitir gestos táctiles:
+            canvas.style.touchAction = 'none';
+
+            // Inicializar la SignaturePad
+            signaturePad = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255,255,255)',
+                penColor: 'rgb(0, 0, 0)'
+            });
+
+            inputBase64 = document.getElementById('inputbase64');
+
+            const saveButton  = document.getElementById('guardar');
+            const clearButton = document.getElementById('limpiar');
+
+            // Asignar eventos
+            clearButton.addEventListener('click', limpiarFirma);
+            saveButton.addEventListener('click', guardarFirma);
+        }, 300); 
+        // pequeño delay para asegurarnos de que el modal ya se pintó y es visible
+    });
+
+    function limpiarFirma() {
+        if (!signaturePad) return;
+        signaturePad.clear();
+        if (inputBase64) {
+            inputBase64.value = "";
+            // Disparamos el evento para que Livewire actualice la propiedad
+            inputBase64.dispatchEvent(new Event('input'));
+        }
+    }
+
+    function guardarFirma() {
+        if (!signaturePad) return;
+        if (signaturePad.isEmpty()) {
+            alert('Por favor, haga una firma antes de guardar.');
+            return;
+        }
+        const base64Signature = signaturePad.toDataURL();
+        inputBase64.value = base64Signature;
+        inputBase64.dispatchEvent(new Event('input'));
+        alert('Firma guardada correctamente.');
+    }
+</script>

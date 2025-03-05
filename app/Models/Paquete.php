@@ -22,5 +22,8 @@ class Paquete extends Model
         'observacion',
         'intento',
         'sys',
+        'firma',        // IMPORTANTE agregar aquí
+        'photo',        // IMPORTANTE agregar aquí
+
     ];
 }
