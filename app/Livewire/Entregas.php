@@ -85,7 +85,7 @@ class Entregas extends Component
     {
         // Validar datos de entrada
         $validatedData = $this->validate();
-        // Log para verificar la firma antes de guardarla
+
         Log::info('Contenido de la firma al guardar: ' . $this->firma);
 
         $paquete = Paquete::find($this->selectedPaquete);
@@ -102,8 +102,8 @@ class Entregas extends Component
             // Tomamos el contenido binario
             $imageContents = file_get_contents($this->photo->getRealPath());
             // Lo convertimos a base64
-            $base64   = base64_encode($imageContents);
-            $extension = $this->photo->extension();
+            $base64     = base64_encode($imageContents);
+            $extension  = $this->photo->extension();
             // Creamos la cadena con el mime-type
             $photoBase64 = 'data:image/' . $extension . ';base64,' . $base64;
         }
@@ -112,19 +112,20 @@ class Entregas extends Component
         $api_urls = [
             'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
             'EMS'        => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
-            'GESCON'     => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
+            // AQUÍ se reemplaza la ruta anterior de GESCON:
+            'GESCON'     => "http://172.65.10.52:8450/api/solicitud/actualizar-estado",
         ];
 
-        // Definir datos específicos según el origen
+        // Definir la data específica según el origen
         $api_data = [
             'TRACKINGBO' => [
                 "ESTADO"        => $validatedData['estado'] === 'ENTREGADO' ? 'REPARTIDO' : $validatedData['estado'],
                 "action"        => $validatedData['estado'],
                 "user_id"       => 86,
-                "descripcion"   => $validatedData['estado'] === 'ENTREGADO'
+                "descripcion"   => ($validatedData['estado'] === 'ENTREGADO')
                     ? 'Entrega de paquete con Cartero'
                     : 'El Cartero Intento de Entrega por Cartero',
-                "OBSERVACIONES" => $validatedData['estado'] === 'RETORNO'
+                "OBSERVACIONES" => ($validatedData['estado'] === 'RETORNO')
                     ? $validatedData['observacion']
                     : '',
                 "usercartero"   => Auth::user()->name,
@@ -133,21 +134,24 @@ class Entregas extends Component
                 "codigo"       => $paquete->codigo,
                 "estado"       => $validatedData['estado'] === 'ENTREGADO' ? 5 : 10,
                 "usercartero"  => Auth::user()->name,
-                "action"       => $validatedData['estado'] === 'ENTREGADO'
+                "action"       => ($validatedData['estado'] === 'ENTREGADO')
                     ? "Entregar Envio"
                     : "Return",
             ],
+            // AQUÍ preparamos la data para la NUEVA ruta de GESCON
             'GESCON' => [
-                "guia"        => $paquete->codigo,
-                "estado"      => $validatedData['estado'] === 'ENTREGADO' ? 3 : 7,
-                "usercartero" => Auth::user()->name,
-                "action"      => $validatedData['estado'] === 'ENTREGADO'
-                    ? "Entregado"
-                    : "Rechazado",
-            ]
+                "guia"               => $paquete->codigo,
+                "estado"             => ($validatedData['estado'] === 'ENTREGADO') ? 3 : 7,
+                "firma_d"            => $this->firma, // Puedes modificarlo si prefieres otro valor fijo
+                // Si está ENTREGADO, se toma 'observacion_entrega'; si RETORNO, la 'observacion' normal
+                "entrega_observacion" => ($validatedData['estado'] === 'ENTREGADO')
+                    ? $this->observacion_entrega
+                    : $validatedData['observacion'],
+                "imagen"            => $photoBase64,
+            ],
         ];
 
-        // Cabeceras de autorización para la API
+        // Cabeceras de autorización para las APIs
         $headers = [
             'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
             'Accept'        => 'application/json',
@@ -157,14 +161,14 @@ class Entregas extends Component
         try {
             $origen = $paquete->sys;
 
-            // Si el origen es válido, realiza la solicitud
+            // Verificamos si el origen es válido
             if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
                 $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
 
                 if ($response->successful()) {
                     Log::info("Paquete {$paquete->codigo} actualizado en la API {$origen} con éxito.");
 
-                    // Actualizaciones locales
+                    // Actualizaciones locales según el estado
                     if ($validatedData['estado'] === 'ENTREGADO') {
                         $paquete->update([
                             'accion'               => 'ENTREGADO',
@@ -173,7 +177,7 @@ class Entregas extends Component
                             'photo'                => $photoBase64, // Guardamos la imagen en la BD
                         ]);
 
-                        // Borramos el registro si así lo deseas
+                        // Borramos el registro si así se requiere
                         $paquete->delete();
 
                         Event::create([
@@ -190,9 +194,8 @@ class Entregas extends Component
                                 "estado"             => 5,
                                 "firma_entrega"      => $this->firma,
                                 "observacion_entrega" => $this->observacion_entrega,
-                                "photo"              => $photoBase64, // <-- ¡IMPORTANTE!
+                                "photo"              => $photoBase64,
                             ];
-
 
                             $headersLocal = [
                                 'Accept'       => 'application/json',
@@ -217,7 +220,7 @@ class Entregas extends Component
                             'accion'      => 'RETORNO',
                             'observacion' => $validatedData['observacion'],
                             'firma'       => $this->firma,
-                            'photo'       => $photoBase64, // Guardamos la imagen también
+                            'photo'       => $photoBase64,
                         ]);
 
                         Event::create([
@@ -246,6 +249,7 @@ class Entregas extends Component
         // Forzar recarga de la página (si así lo deseas)
         $this->dispatch('reloadPage');
     }
+
 
     public function render()
     {
