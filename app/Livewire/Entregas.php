@@ -83,11 +83,20 @@ class Entregas extends Component
     // Método que procesa la acción de dar de baja
     public function darDeBaja()
     {
-        // Validar datos de entrada
-        $validatedData = $this->validate();
-
-        Log::info('Contenido de la firma al guardar: ' . $this->firma);
-
+        // Validaciones. Descomenta la regla de 'firma' si quieres que sea obligatoria al ENTREGAR.
+        // Igualmente, si deseas que 'photo' sea obligatoria al ENTREGAR, cámbiala a: 
+        // 'photo' => 'required_if:estado,ENTREGADO|image|max:10240'
+        $this->validate([
+            'estado'      => 'required|in:ENTREGADO,RETORNO',
+            'observacion' => 'required_if:estado,RETORNO',
+            'photo'       => 'nullable|image|max:10240',
+            'firma'       => 'required_if:estado,ENTREGADO',  // <--- IMPORTANTE si quieres forzar la firma
+        ]);
+    
+        // Para debug, ve qué contenido tienes en la firma y en la foto:
+        Log::info('Contenido de la firma al guardar: ' . substr($this->firma, 0, 100) . '...');
+        Log::info('Estado seleccionado: ' . $this->estado);
+    
         $paquete = Paquete::find($this->selectedPaquete);
         if (! $paquete) {
             session()->flash('error', 'Paquete no encontrado.');
@@ -95,116 +104,138 @@ class Entregas extends Component
             $this->dispatch('reloadPage');
             return;
         }
-
-        // Procesar la imagen si se subió
+    
+        // Convertir la foto subida a base64 si existe:
         $photoBase64 = null;
         if ($this->photo) {
-            // Tomamos el contenido binario
+            // Contenido binario de la imagen
             $imageContents = file_get_contents($this->photo->getRealPath());
-            // Lo convertimos a base64
-            $base64     = base64_encode($imageContents);
-            $extension  = $this->photo->extension();
-            // Creamos la cadena con el mime-type
+            // Convertimos a base64
+            $base64    = base64_encode($imageContents);
+            $extension = $this->photo->extension();  // e.g. 'png', 'jpg', etc.
+    
+            // Construimos la cadena con mime-type
             $photoBase64 = 'data:image/' . $extension . ';base64,' . $base64;
+            // Log para debug
+            Log::info('Imagen convertida a base64: ' . substr($photoBase64, 0, 100) . '...');
         }
-
-        // Definir las URLs de las APIs según el origen del paquete
+    
+        // URLs de APIs según el origen
         $api_urls = [
             'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
             'EMS'        => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
-            // AQUÍ se reemplaza la ruta anterior de GESCON:
             'GESCON'     => "http://172.65.10.52:8450/api/solicitud/actualizar-estado",
         ];
-
-        // Definir la data específica según el origen
+    
+        // Data que se va a enviar dependiendo de sys/origen:
         $api_data = [
             'TRACKINGBO' => [
-                "ESTADO"        => $validatedData['estado'] === 'ENTREGADO' ? 'REPARTIDO' : $validatedData['estado'],
-                "action"        => $validatedData['estado'],
+                "ESTADO"        => $this->estado === 'ENTREGADO' ? 'REPARTIDO' : $this->estado,
+                "action"        => $this->estado,
                 "user_id"       => 86,
-                "descripcion"   => ($validatedData['estado'] === 'ENTREGADO')
+                "descripcion"   => ($this->estado === 'ENTREGADO')
                     ? 'Entrega de paquete con Cartero'
                     : 'El Cartero Intento de Entrega por Cartero',
-                "OBSERVACIONES" => ($validatedData['estado'] === 'RETORNO')
-                    ? $validatedData['observacion']
+                "OBSERVACIONES" => ($this->estado === 'RETORNO')
+                    ? $this->observacion
                     : '',
                 "usercartero"   => Auth::user()->name,
             ],
             'EMS' => [
                 "codigo"       => $paquete->codigo,
-                "estado"       => $validatedData['estado'] === 'ENTREGADO' ? 5 : 10,
+                "estado"       => $this->estado === 'ENTREGADO' ? 5 : 10,
                 "usercartero"  => Auth::user()->name,
-                "action"       => ($validatedData['estado'] === 'ENTREGADO')
-                    ? "Entregar Envio"
-                    : "Return",
+                "action"       => ($this->estado === 'ENTREGADO') ? "Entregar Envio" : "Return",
             ],
-            // AQUÍ preparamos la data para la NUEVA ruta de GESCON
             'GESCON' => [
-                "guia"               => $paquete->codigo,
-                "estado"             => ($validatedData['estado'] === 'ENTREGADO') ? 3 : 7,
-                "firma_d"            => $this->firma, // Puedes modificarlo si prefieres otro valor fijo
-                // Si está ENTREGADO, se toma 'observacion_entrega'; si RETORNO, la 'observacion' normal
-                "entrega_observacion" => ($validatedData['estado'] === 'ENTREGADO')
+                "guia"                => $paquete->codigo,
+                "estado"             => ($this->estado === 'ENTREGADO') ? 3 : 7,
+                "firma_d"            => $this->firma,
+                "entrega_observacion" => ($this->estado === 'ENTREGADO')
                     ? $this->observacion_entrega
-                    : $validatedData['observacion'],
-                "imagen"            => $photoBase64,
+                    : $this->observacion,
+                "imagen"             => $photoBase64,
             ],
         ];
-
-        // Cabeceras de autorización para las APIs
+    
+        // Cabeceras para la llamada HTTP
         $headers = [
             'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
             'Accept'        => 'application/json',
             'Content-Type'  => 'application/json',
         ];
-
+    
         try {
             $origen = $paquete->sys;
-
-            // Verificamos si el origen es válido
+    
+            // Verificamos si existe config de la API para este origen
             if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
+                // 1) Llamada a la API principal
                 $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
-
+    
                 if ($response->successful()) {
                     Log::info("Paquete {$paquete->codigo} actualizado en la API {$origen} con éxito.");
-
+    
+                    // 2) Llamada extra para TRACKINGBO: imágenes/firma
+                    if ($origen === 'TRACKINGBO') {
+                        try {
+                            $imagenesData = [
+                                "codigo" => $paquete->codigo,
+                                "foto"   => $photoBase64,  // data:image/...;base64,...
+                                "firma"  => $this->firma,  // data:image/...;base64,...
+                            ];
+    
+                            // Llamada POST (verifica que el endpoint acepte POST y JSON)
+                            $imagenesResponse = Http::withHeaders($headers)
+                                ->put('http://172.65.10.52/api/actualizar-imagenes', $imagenesData);
+    
+                            if ($imagenesResponse->successful()) {
+                                Log::info("Imagen(es) para paquete {$paquete->codigo} actualizadas en TRACKINGBO con éxito.");
+                            } else {
+                                Log::error("Error al actualizar imágenes en TRACKINGBO: " . $imagenesResponse->body());
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Excepción al actualizar imágenes en TRACKINGBO: " . $e->getMessage());
+                        }
+                    }
+    
                     // Actualizaciones locales según el estado
-                    if ($validatedData['estado'] === 'ENTREGADO') {
+                    if ($this->estado === 'ENTREGADO') {
                         $paquete->update([
                             'accion'               => 'ENTREGADO',
                             'firma'                => $this->firma,
                             'observacion_entrega'  => $this->observacion_entrega,
-                            'photo'                => $photoBase64, // Guardamos la imagen en la BD
+                            'photo'                => $photoBase64,  // guardamos imagen base64 en la BD
                         ]);
-
-                        // Borramos el registro si así se requiere
+    
+                        // Borramos el registro de la tabla principal si así lo requieres
                         $paquete->delete();
-
+    
                         Event::create([
                             'action'      => 'ENTREGADO',
                             'descripcion' => 'Paquete entregado por el cartero',
                             'codigo'      => $paquete->codigo,
                             'user_id'     => auth()->id(),
                         ]);
-
-                        // **PUT A API LOCAL: `entregar-envio`**
+    
+                        // Llamada a la API local /entregar-envio
                         try {
                             $datosLocal = [
-                                "codigo"             => $paquete->codigo,
-                                "estado"             => 5,
-                                "firma_entrega"      => $this->firma,
+                                "codigo"              => $paquete->codigo,
+                                "estado"              => 5,
+                                "firma_entrega"       => $this->firma,
                                 "observacion_entrega" => $this->observacion_entrega,
-                                "photo"              => $photoBase64,
+                                "photo"               => $photoBase64,
                             ];
-
+    
                             $headersLocal = [
                                 'Accept'       => 'application/json',
                                 'Content-Type' => 'application/json',
                             ];
-
+    
                             $responseLocal = Http::withHeaders($headersLocal)
                                 ->put('http://172.65.10.52:8011/api/entregar-envio', $datosLocal);
-
+    
                             if ($responseLocal->successful()) {
                                 Log::info("Paquete {$paquete->codigo} actualizado en API local `/entregar-envio` con éxito.");
                             } else {
@@ -215,14 +246,14 @@ class Entregas extends Component
                             Log::error("Excepción en `/entregar-envio`: " . $e->getMessage());
                             session()->flash('error', 'Error de conexión con la API local.');
                         }
-                    } elseif ($validatedData['estado'] === 'RETORNO') {
+                    } elseif ($this->estado === 'RETORNO') {
                         $paquete->update([
                             'accion'      => 'RETORNO',
-                            'observacion' => $validatedData['observacion'],
+                            'observacion' => $this->observacion,
                             'firma'       => $this->firma,
                             'photo'       => $photoBase64,
                         ]);
-
+    
                         Event::create([
                             'action'      => 'RETORNO',
                             'descripcion' => 'Paquete con retorno a ventanilla',
@@ -230,7 +261,7 @@ class Entregas extends Component
                             'user_id'     => auth()->id(),
                         ]);
                     }
-
+    
                     session()->flash('message', 'El paquete se ha dado de baja correctamente.');
                 } else {
                     Log::error("Error al actualizar paquete {$paquete->codigo} en la API {$origen}: " . $response->body());
@@ -244,12 +275,12 @@ class Entregas extends Component
             Log::error("Excepción en API {$origen} para el paquete {$paquete->codigo}: " . $e->getMessage());
             session()->flash('error', 'Error de conexión con la API.');
         }
-
+    
         $this->closeModal();
-        // Forzar recarga de la página (si así lo deseas)
-        $this->dispatch('reloadPage');
+        $this->dispatch('reloadPage');  // fuerza la recarga
     }
-
+    
+    
 
     public function render()
     {
