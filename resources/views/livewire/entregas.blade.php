@@ -20,7 +20,7 @@
                 <div class="mb-3">
                     <label for="codigo" class="form-label">Código del paquete:</label>
                     <input type="text" id="codigo" wire:model="codigo" class="form-control"
-                           placeholder="Ingrese el código y presione Enter">
+                        placeholder="Ingrese el código y presione Enter">
                 </div>
                 <button type="submit" class="btn btn-primary">Buscar</button>
             </form>
@@ -93,10 +93,9 @@
                     </div>
                     <div class="modal-body">
                         <form wire:submit.prevent="darDeBaja">
-                            <div class="mb-3">
+                            <div class="mb-3" wire:ignore.self>
                                 <label for="estado" class="form-label fw-bold">Estado</label>
-                                <select id="estado" wire:model="estado" onchange="toggleObservacion()"
-                                        class="form-select">
+                                <select id="estado" wire:model="estado" class="form-select">
                                     <option value="">Seleccione un estado</option>
                                     <option value="ENTREGADO">ENTREGADO</option>
                                     <option value="RETORNO">RETORNO</option>
@@ -106,41 +105,38 @@
                                 @enderror
                             </div>
 
-                            <!-- Contenedor de observaciones, oculto por defecto -->
-                            <div class="mb-3" id="observacionContainer" style="display: none;">
-                                <label for="observacion" class="form-label fw-bold">Observaciones</label>
-                                <select id="observacion" wire:model="observacion" class="form-select">
-                                    <option value="">Seleccione una observación</option>
-                                    <option value="Dirección incorrecta">Dirección incorrecta</option>
-                                    <option value="Destinatario no localizado">Destinatario no localizado</option>
-                                    <option value="Destinatario ausente">Destinatario ausente</option>
-                                    <option value="Artículo rechazado">Artículo rechazado</option>
-                                    <option value="Reprogramación solicitada">Reprogramación solicitada</option>
-                                    <option value="Acceso restringido">Acceso restringido</option>
-                                    <option value="Artículo equivocado">Artículo equivocado</option>
-                                    <option value="Artículo dañado">Artículo dañado</option>
-                                    <option value="No reclamado">No reclamado</option>
-                                    <option value="Fallecido">Fallecido</option>
-                                    <option value="Fuerza mayor">Fuerza mayor</option>
-                                    <option value="Recojo en agencia">Recojo en agencia</option>
-                                    <option value="Destinatario de vacaciones">Destinatario de vacaciones</option>
-                                    <option value="Destinatario en traslado">Destinatario en traslado</option>
-                                    <option value="Falta de identificación">Falta de identificación</option>
-                                    <option value="Reintentos fallidos">Reintentos fallidos</option>
-                                    <option value="Otros">Otros</option>
-                                </select>
-                                @error('observacion')
-                                    <span class="text-danger">{{ $message }}</span>
-                                @enderror
-                            </div>
- <!-- Observación general -->
- <div class="mb-3">
-    <label for="observacion_entrega" class="form-label fw-bold">Observación de Entrega</label>
-    <textarea id="observacion_entrega" wire:model="observacion_entrega" class="form-control" rows="2"></textarea>
-    @error('observacion_entrega')
-        <span class="text-danger">{{ $message }}</span>
-    @enderror
-</div>
+                            @if ($estado === 'RETORNO')
+                                <div class="mb-3">
+                                    <label for="observacion" class="form-label fw-bold">Observaciones</label>
+                                    <select id="observacion" wire:model="observacion" class="form-select">
+                                        <option value="">Seleccione una observación</option>
+                                        <option value="Dirección incorrecta">Dirección incorrecta</option>
+                                        <option value="Destinatario no localizado">Destinatario no localizado</option>
+                                        <option value="Destinatario ausente">Destinatario ausente</option>
+                                        <option value="Artículo rechazado">Artículo rechazado</option>
+                                        <option value="Reprogramación solicitada">Reprogramación solicitada</option>
+                                        <option value="Acceso restringido">Acceso restringido</option>
+                                        <option value="Artículo equivocado">Artículo equivocado</option>
+                                        <option value="Artículo dañado">Artículo dañado</option>
+                                        <option value="No reclamado">No reclamado</option>
+                                        <option value="Fallecido">Fallecido</option>
+                                        <option value="Fuerza mayor">Fuerza mayor</option>
+                                        <option value="Recojo en agencia">Recojo en agencia</option>
+                                        <option value="Destinatario de vacaciones">Destinatario de vacaciones</option>
+                                        <option value="Destinatario en traslado">Destinatario en traslado</option>
+                                        <option value="Falta de identificación">Falta de identificación</option>
+                                        <option value="Reintentos fallidos">Reintentos fallidos</option>
+                                        <option value="Otros">Otros</option>
+                                    </select>
+                                    @error('observacion')
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                            @endif
+
+
+
+                           
                             <!-- Sección de firma -->
                             <div class="mb-3">
                                 <label for="firma" class="form-label fw-bold">Firma</label>
@@ -149,11 +145,8 @@
 
                                 <!-- Lienzo de la firma -->
                                 <div class="text-center">
-                                    <canvas id="canvas"
-                                            class="border border-secondary rounded bg-white w-100"
-                                            style="max-width: 100%; height: auto;"
-                                            width="600"
-                                            height="250">
+                                    <canvas id="canvas" class="border border-secondary rounded bg-white w-100"
+                                        style="max-width: 100%; height: auto;" width="600" height="250">
                                     </canvas>
                                 </div>
 
@@ -177,18 +170,18 @@
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
-                            
+
                             <!-- Previsualización de la imagen -->
                             @if ($photo)
                                 <div class="mb-3 text-center">
-                                    <img src="{{ $photo->temporaryUrl() }}" alt="Previsualización" class="img-thumbnail mt-2" style="max-width: 200px;">
+                                    <img src="{{ $photo->temporaryUrl() }}" alt="Previsualización"
+                                        class="img-thumbnail mt-2" style="max-width: 200px;">
                                 </div>
                             @endif
                             <!-- Fin sección firma -->
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary"
-                                        wire:click="closeModal">
+                                <button type="button" class="btn btn-outline-secondary" wire:click="closeModal">
                                     Cancelar
                                 </button>
                                 <button type="submit" class="btn btn-success">
@@ -205,9 +198,9 @@
         </div>
     @endif
 
-  
+
 </div>
- <!-- Librería SignaturePad -->
+<!-- Librería SignaturePad -->
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
@@ -216,7 +209,7 @@
     let canvas;
     let inputBase64;
 
-    window.addEventListener('initFirma', function () {
+    window.addEventListener('initFirma', function() {
         // Esperamos a que Livewire pinte el modal:
         setTimeout(() => {
             canvas = document.getElementById('canvas');
@@ -233,13 +226,13 @@
 
             inputBase64 = document.getElementById('inputbase64');
 
-            const saveButton  = document.getElementById('guardar');
+            const saveButton = document.getElementById('guardar');
             const clearButton = document.getElementById('limpiar');
 
             // Asignar eventos
             clearButton.addEventListener('click', limpiarFirma);
             saveButton.addEventListener('click', guardarFirma);
-        }, 300); 
+        }, 300);
         // pequeño delay para asegurarnos de que el modal ya se pintó y es visible
     });
 
@@ -263,5 +256,17 @@
         inputBase64.value = base64Signature;
         inputBase64.dispatchEvent(new Event('input'));
         alert('Firma guardada correctamente.');
+    }
+</script>
+<script>
+    function toggleObservacion() {
+        const estadoSelect = document.getElementById('estado');
+        const obsContainer = document.getElementById('observacionContainer');
+
+        if (estadoSelect.value === 'RETORNO') {
+            obsContainer.style.display = 'block';
+        } else {
+            obsContainer.style.display = 'none';
+        }
     }
 </script>

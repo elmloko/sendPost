@@ -83,17 +83,15 @@ class Entregas extends Component
     // Método que procesa la acción de dar de baja
     public function darDeBaja()
     {
-        // Validaciones. Descomenta la regla de 'firma' si quieres que sea obligatoria al ENTREGAR.
-        // Igualmente, si deseas que 'photo' sea obligatoria al ENTREGAR, cámbiala a: 
-        // 'photo' => 'required_if:estado,ENTREGADO|image|max:10240'
+        // Si quieres que la firma y foto sean obligatorias también para RETORNO, 
+        // cambia las reglas a 'required_if:estado,ENTREGADO,RETORNO', etc.
         $this->validate([
             'estado'      => 'required|in:ENTREGADO,RETORNO',
-            'observacion' => 'required_if:estado,RETORNO',
+            'observacion' => 'required_if:estado,RETORNO',  // ← OBLIGATORIO en RETORNO
             'photo'       => 'nullable|image|max:10240',
-            'firma'       => 'required_if:estado,ENTREGADO',  // <--- IMPORTANTE si quieres forzar la firma
+            'firma'       => 'required_if:estado,ENTREGADO', // ← OBLIGATORIO en ENTREGADO
         ]);
     
-        // Para debug, ve qué contenido tienes en la firma y en la foto:
         Log::info('Contenido de la firma al guardar: ' . substr($this->firma, 0, 100) . '...');
         Log::info('Estado seleccionado: ' . $this->estado);
     
@@ -105,29 +103,25 @@ class Entregas extends Component
             return;
         }
     
-        // Convertir la foto subida a base64 si existe:
+        // Convertir imagen a base64 si se subió
         $photoBase64 = null;
         if ($this->photo) {
-            // Contenido binario de la imagen
             $imageContents = file_get_contents($this->photo->getRealPath());
-            // Convertimos a base64
-            $base64    = base64_encode($imageContents);
-            $extension = $this->photo->extension();  // e.g. 'png', 'jpg', etc.
+            $base64        = base64_encode($imageContents);
+            $extension     = $this->photo->extension(); // 'png','jpg', etc.
+            $photoBase64   = 'data:image/' . $extension . ';base64,' . $base64;
     
-            // Construimos la cadena con mime-type
-            $photoBase64 = 'data:image/' . $extension . ';base64,' . $base64;
-            // Log para debug
             Log::info('Imagen convertida a base64: ' . substr($photoBase64, 0, 100) . '...');
         }
     
-        // URLs de APIs según el origen
+        // APIs externas según sys
         $api_urls = [
             'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
             'EMS'        => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
             'GESCON'     => "http://172.65.10.52:8450/api/solicitud/actualizar-estado",
         ];
     
-        // Data que se va a enviar dependiendo de sys/origen:
+        // Data según origen
         $api_data = [
             'TRACKINGBO' => [
                 "ESTADO"        => $this->estado === 'ENTREGADO' ? 'REPARTIDO' : $this->estado,
@@ -136,16 +130,14 @@ class Entregas extends Component
                 "descripcion"   => ($this->estado === 'ENTREGADO')
                     ? 'Entrega de paquete con Cartero'
                     : 'El Cartero Intento de Entrega por Cartero',
-                "OBSERVACIONES" => ($this->estado === 'RETORNO')
-                    ? $this->observacion
-                    : '',
+                "OBSERVACIONES" => ($this->estado === 'RETORNO') ? $this->observacion : '',
                 "usercartero"   => Auth::user()->name,
             ],
             'EMS' => [
-                "codigo"       => $paquete->codigo,
-                "estado"       => $this->estado === 'ENTREGADO' ? 5 : 10,
-                "usercartero"  => Auth::user()->name,
-                "action"       => ($this->estado === 'ENTREGADO') ? "Entregar Envio" : "Return",
+                "codigo"      => $paquete->codigo,
+                "estado"      => ($this->estado === 'ENTREGADO') ? 5 : 10,
+                "usercartero" => Auth::user()->name,
+                "action"      => ($this->estado === 'ENTREGADO') ? "Entregar Envío" : "Return",
             ],
             'GESCON' => [
                 "guia"                => $paquete->codigo,
@@ -158,7 +150,6 @@ class Entregas extends Component
             ],
         ];
     
-        // Cabeceras para la llamada HTTP
         $headers = [
             'Authorization' => 'Bearer eZMlItx6mQMNZjxoijEvf7K3pYvGGXMvEHmQcqvtlAPOEAPgyKDVOpyF7JP0ilbK',
             'Accept'        => 'application/json',
@@ -168,24 +159,23 @@ class Entregas extends Component
         try {
             $origen = $paquete->sys;
     
-            // Verificamos si existe config de la API para este origen
             if (isset($api_urls[$origen]) && isset($api_data[$origen])) {
-                // 1) Llamada a la API principal
-                $response = Http::withHeaders($headers)->put($api_urls[$origen], $api_data[$origen]);
+    
+                // --- 1) PUT a la API principal ---
+                $response = Http::withHeaders($headers)
+                    ->put($api_urls[$origen], $api_data[$origen]);
     
                 if ($response->successful()) {
                     Log::info("Paquete {$paquete->codigo} actualizado en la API {$origen} con éxito.");
     
-                    // 2) Llamada extra para TRACKINGBO: imágenes/firma
+                    // --- 2) Subir imágenes/firma a TRACKINGBO (si aplica) ---
                     if ($origen === 'TRACKINGBO') {
                         try {
                             $imagenesData = [
                                 "codigo" => $paquete->codigo,
-                                "foto"   => $photoBase64,  // data:image/...;base64,...
-                                "firma"  => $this->firma,  // data:image/...;base64,...
+                                "foto"   => $photoBase64, // data:image/...;base64,...
+                                "firma"  => $this->firma, // data:image/...;base64,...
                             ];
-    
-                            // Llamada POST (verifica que el endpoint acepte POST y JSON)
                             $imagenesResponse = Http::withHeaders($headers)
                                 ->put('http://172.65.10.52/api/actualizar-imagenes', $imagenesData);
     
@@ -199,16 +189,16 @@ class Entregas extends Component
                         }
                     }
     
-                    // Actualizaciones locales según el estado
+                    // --- 3) Actualización local según sea ENTREGADO o RETORNO ---
                     if ($this->estado === 'ENTREGADO') {
                         $paquete->update([
-                            'accion'               => 'ENTREGADO',
-                            'firma'                => $this->firma,
-                            'observacion_entrega'  => $this->observacion_entrega,
-                            'photo'                => $photoBase64,  // guardamos imagen base64 en la BD
+                            'accion'              => 'ENTREGADO',
+                            'firma'               => $this->firma,
+                            'observacion_entrega' => $this->observacion_entrega,
+                            'photo'               => $photoBase64,
                         ]);
-    
-                        // Borramos el registro de la tabla principal si así lo requieres
+                        
+                        // Si deseas, lo borras de la tabla principal:
                         $paquete->delete();
     
                         Event::create([
@@ -218,11 +208,11 @@ class Entregas extends Component
                             'user_id'     => auth()->id(),
                         ]);
     
-                        // Llamada a la API local /entregar-envio
+                        // --- Llamada local a /entregar-envio ---
                         try {
                             $datosLocal = [
                                 "codigo"              => $paquete->codigo,
-                                "estado"              => 5,
+                                "estado"              => 5, // Ajusta si tu API lo requiere
                                 "firma_entrega"       => $this->firma,
                                 "observacion_entrega" => $this->observacion_entrega,
                                 "photo"               => $photoBase64,
@@ -246,7 +236,8 @@ class Entregas extends Component
                             Log::error("Excepción en `/entregar-envio`: " . $e->getMessage());
                             session()->flash('error', 'Error de conexión con la API local.');
                         }
-                    } elseif ($this->estado === 'RETORNO') {
+    
+                    } else if ($this->estado === 'RETORNO') {
                         $paquete->update([
                             'accion'      => 'RETORNO',
                             'observacion' => $this->observacion,
@@ -260,10 +251,40 @@ class Entregas extends Component
                             'codigo'      => $paquete->codigo,
                             'user_id'     => auth()->id(),
                         ]);
+    
+                        // --- Llamada local a /retornar-envio (AJUSTA si necesitas) ---
+                        try {
+                            $datosLocalRetorno = [
+                                "codigo"      => $paquete->codigo,
+                                "estado"      => 10, // Ajusta según tu lógica
+                                "firma"       => $this->firma,
+                                "observacion" => $this->observacion,
+                                "photo"       => $photoBase64,
+                            ];
+    
+                            $headersLocal = [
+                                'Accept'       => 'application/json',
+                                'Content-Type' => 'application/json',
+                            ];
+    
+                            $responseLocalRetorno = Http::withHeaders($headersLocal)
+                                ->put('http://172.65.10.52:8011/api/retornar-envio', $datosLocalRetorno);
+    
+                            if ($responseLocalRetorno->successful()) {
+                                Log::info("Paquete {$paquete->codigo} actualizado en la API local `/retornar-envio` con éxito.");
+                            } else {
+                                Log::error("Error en `/retornar-envio`: " . $responseLocalRetorno->body());
+                                session()->flash('error', 'Error en la API local de retorno.');
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Excepción en `/retornar-envio`: " . $e->getMessage());
+                            session()->flash('error', 'Error de conexión con la API local.');
+                        }
                     }
     
                     session()->flash('message', 'El paquete se ha dado de baja correctamente.');
                 } else {
+                    // Hubo error en la respuesta
                     Log::error("Error al actualizar paquete {$paquete->codigo} en la API {$origen}: " . $response->body());
                     session()->flash('error', 'Error al actualizar el paquete en la API.');
                 }
@@ -277,7 +298,7 @@ class Entregas extends Component
         }
     
         $this->closeModal();
-        $this->dispatch('reloadPage');  // fuerza la recarga
+        $this->dispatch('reloadPage');  // fuerza recarga en el front
     }
     
     
