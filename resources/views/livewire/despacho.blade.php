@@ -58,6 +58,7 @@
                         <th>Ciudad</th>
                         <th>Peso</th>
                         <th>Observación</th>
+                        <th>Foto</th>
                         <th>Fecha Retorno</th>
                         @hasrole('Administrador|Encargado')
                             <th>Usuario</th>
@@ -73,6 +74,14 @@
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
                             <td>{{ $p->observacion }}</td>
+                            <td>
+                                @if ($p->photo)
+                                    <img src="{{ $p->photo }}" alt="photo" class="bg-white"
+                                        style="width: 100px; height: auto; border: 1px solid #ccc; padding: 5px;">
+                                @else
+                                    <p></p>
+                                @endif
+                            </td>
                             <td>{{ $p->updated_at }}</td>
                             @hasrole('Administrador|Encargado')
                                 <td>{{ $p->user }}</td>

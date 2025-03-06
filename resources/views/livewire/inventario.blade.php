@@ -56,6 +56,7 @@
                         <th>Destinatario</th>
                         <th>Ciudad</th>
                         <th>Peso</th>
+                        <th>Foto/Firma</th>
                         <th>Fecha Entrega</th>
                         @hasrole('Administrador|Encargado')
                             <th>Usuario</th>
@@ -72,6 +73,21 @@
                             <td>{{ $p->destinatario }}</td>
                             <td>{{ $p->cuidad }}</td>
                             <td>{{ $p->peso }}</td>
+                            <td>{{ $p->ESTADO }}</td>
+                            <td>
+                                @if ($p->firma)
+                                    <img src="{{ $p->firma }}" alt="firma" class="bg-white"
+                                        style="width: 100px; height: auto; border: 1px solid #ccc; padding: 5px;">
+                                @else
+                                    <p></p>
+                                @endif
+                                @if ($p->photo)
+                                    <img src="{{ $p->photo }}" alt="photo" class="bg-white"
+                                        style="width: 100px; height: auto; border: 1px solid #ccc; padding: 5px;">
+                                @else
+                                    <p></p>
+                                @endif
+                            </td>
                             <td>{{ $p->deleted_at }}</td>
                             @hasrole('Administrador')
                                 <td>{{ $p->user }}</td>
