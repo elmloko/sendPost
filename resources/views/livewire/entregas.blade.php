@@ -16,75 +16,104 @@
     {{-- Formulario de búsqueda --}}
     <div class="card mb-4">
         <div class="card-body">
-            <form wire:submit.prevent="buscar">
-                <div class="mb-3">
+            <form wire:submit.prevent="buscar" class="row g-2">
+                <div class="col-12 col-md-6">
                     <label for="codigo" class="form-label">Código del paquete:</label>
                     <input type="text" id="codigo" wire:model="codigo" class="form-control"
                         placeholder="Ingrese el código y presione Enter">
                 </div>
-                <button type="submit" class="btn btn-primary">Buscar</button>
+                <div class="col-12 col-md-6 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Buscar</button>
+                </div>
             </form>
         </div>
     </div>
 
-    {{-- Tabla con los paquetes --}}
-    <div class="card">
+    {{-- Lista de Paquetes en Modo Vertical para Móviles --}}
+    <div class="d-block d-md-none">
+        @forelse ($paquetes as $p)
+            <div class="card mb-2">
+                <div class="card-body">
+                    <p><strong>Código:</strong> {{ $p->codigo }}</p>
+                    <p><strong>Destinatario:</strong> {{ $p->destinatario }}</p>
+                    <p><strong>Estado:</strong> {{ $p->accion }}</p>
+                    <p><strong>Ciudad:</strong> {{ $p->cuidad }}</p>
+                    <p><strong>Peso:</strong> {{ $p->peso }}</p>
+                    @hasrole('Administrador|Encargado')
+                        <p><strong>Usuario:</strong> {{ $p->user }}</p>
+                    @endhasrole
+                    @hasrole('Administrador|Cartero')
+                        <button class="btn btn-danger btn-sm w-100" wire:click="openModal({{ $p->id }})">
+                            Dar de baja
+                        </button>
+                    @endhasrole
+                </div>
+            </div>
+        @empty
+            <p class="text-center">No hay paquetes con estado CARTERO.</p>
+        @endforelse
+    </div>
+
+    {{-- Tabla para Escritorio --}}
+    <div class="card d-none d-md-block">
         <div class="card-header">Lista de Paquetes por Entregar</div>
         <div class="card-body">
-            <table class="table table-bordered table-striped">
-                <thead>
-                    <tr>
-                        <th>Código</th>
-                        <th>Destinatario</th>
-                        <th>Estado</th>
-                        <th>Ciudad</th>
-                        <th>Peso</th>
-                        @hasrole('Administrador|Encargado')
-                            <th>Usuario</th>
-                        @endhasrole
-                        @hasrole('Administrador|Cartero')
-                            <th>Acciones</th>
-                        @endhasrole
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($paquetes as $p)
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="text-center">
                         <tr>
-                            <td>{{ $p->codigo }}</td>
-                            <td>{{ $p->destinatario }}</td>
-                            <td>{{ $p->accion }}</td>
-                            <td>{{ $p->cuidad }}</td>
-                            <td>{{ $p->peso }}</td>
+                            <th>Código</th>
+                            <th>Destinatario</th>
+                            <th>Estado</th>
+                            <th>Ciudad</th>
+                            <th>Peso</th>
                             @hasrole('Administrador|Encargado')
-                                <td>{{ $p->user }}</td>
+                                <th>Usuario</th>
                             @endhasrole
                             @hasrole('Administrador|Cartero')
-                                <td>
-                                    <button class="btn btn-danger btn-sm" wire:click="openModal({{ $p->id }})">
-                                        Dar de baja
-                                    </button>
-                                </td>
+                                <th>Acciones</th>
                             @endhasrole
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="text-center">No hay paquetes con estado CARTERO.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($paquetes as $p)
+                            <tr>
+                                <td>{{ $p->codigo }}</td>
+                                <td>{{ $p->destinatario }}</td>
+                                <td>{{ $p->accion }}</td>
+                                <td>{{ $p->cuidad }}</td>
+                                <td>{{ $p->peso }}</td>
+                                @hasrole('Administrador|Encargado')
+                                    <td>{{ $p->user }}</td>
+                                @endhasrole
+                                @hasrole('Administrador|Cartero')
+                                    <td>
+                                        <button class="btn btn-danger btn-sm w-100" wire:click="openModal({{ $p->id }})">
+                                            Dar de baja
+                                        </button>
+                                    </td>
+                                @endhasrole
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center">No hay paquetes con estado CARTERO.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+</div>
+
 
     {{-- Modal Dar de baja --}}
     @if ($showModal)
         <div class="modal fade show d-block" tabindex="-1" role="dialog" style="background: rgba(0,0,0,0.8);">
-            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-dialog modal-dialog-centered modal-lg w-100" role="document">
                 <div class="modal-content border-primary shadow-lg">
                     <div class="modal-header bg-primary text-white">
-                        <!-- Muestra el código del paquete -->
                         @php
-                            // Intentamos obtener el paquete actual para mostrar su código en el título
                             $modalPaquete = $paquetes->where('id', $selectedPaquete)->first();
                             $codigoPaquete = $modalPaquete ? $modalPaquete->codigo : '';
                         @endphp
@@ -93,16 +122,13 @@
                     </div>
                     <div class="modal-body">
                         <form wire:submit.prevent="darDeBaja">
-                            <div class="mb-3" wire:ignore.self>
+                            <div class="mb-3">
                                 <label for="estado" class="form-label fw-bold">Estado</label>
                                 <select id="estado" wire:model="estado" class="form-select">
                                     <option value="">Seleccione un estado</option>
                                     <option value="ENTREGADO">ENTREGADO</option>
                                     <option value="RETORNO">RETORNO</option>
                                 </select>
-                                @error('estado')
-                                    <span class="text-danger">{{ $message }}</span>
-                                @enderror
                             </div>
 
                             @if ($estado === 'RETORNO')
@@ -128,41 +154,24 @@
                                         <option value="Reintentos fallidos">Reintentos fallidos</option>
                                         <option value="Otros">Otros</option>
                                     </select>
-                                    @error('observacion')
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
                                 </div>
                             @endif
 
-
-
-                           
-                            <!-- Sección de firma -->
-                            <div class="mb-3">
+                            @if ($estado !== 'RETORNO')
+                            <div id="firmaContainer" class="mb-3">
                                 <label for="firma" class="form-label fw-bold">Firma</label>
-                                <!-- Input oculto donde se almacena la firma en base64 -->
                                 <input type="hidden" wire:model="firma" id="inputbase64">
-
-                                <!-- Lienzo de la firma -->
                                 <div class="text-center">
-                                    <canvas id="canvas" class="border border-secondary rounded bg-white w-100"
-                                        style="max-width: 100%; height: auto;" width="600" height="250">
-                                    </canvas>
+                                    <canvas id="canvas" class="border border-secondary rounded bg-white w-100" width="600" height="250"></canvas>
                                 </div>
-
-                                <!-- Botones para guardar y limpiar la firma -->
                                 <div class="mt-2 text-center">
-                                    <button type="button" id="guardar" class="btn btn-primary me-2">
-                                        Guardar Firma
-                                    </button>
-                                    <button type="button" id="limpiar" class="btn btn-secondary">
-                                        Limpiar
-                                    </button>
+                                    <button type="button" id="guardar" class="btn btn-primary me-2">Guardar Firma</button>
+                                    <button type="button" id="limpiar" class="btn btn-secondary">Limpiar</button>
                                 </div>
-                                @error('firma')
-                                    <span class="text-danger">{{ $message }}</span>
-                                @enderror
                             </div>
+                            @endif
+
+                            <!-- Campo para subir la imagen -->
                             <div class="mb-3">
                                 <label for="photo" class="form-label fw-bold">Imagen (opcional)</label>
                                 <input type="file" wire:model="photo" id="photo" class="form-control">
@@ -178,28 +187,35 @@
                                         class="img-thumbnail mt-2" style="max-width: 200px;">
                                 </div>
                             @endif
-                            <!-- Fin sección firma -->
 
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-outline-secondary" wire:click="closeModal">
-                                    Cancelar
-                                </button>
-                                <button type="submit" class="btn btn-success">
-                                    Guardar
-                                </button>
+                            <div class="modal-footer d-flex flex-column flex-md-row">
+                                <button type="button" class="btn btn-outline-secondary w-100 w-md-auto" wire:click="closeModal">Cancelar</button>
+                                <button type="submit" class="btn btn-success w-100 w-md-auto">Guardar</button>
                             </div>
-                            <!-- Campo para subir la imagen -->
-
-
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     @endif
-
-
 </div>
+
+<!-- Responsividad para ocultar firma si se elige "RETORNO" -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const estadoSelect = document.getElementById("estado");
+        const firmaContainer = document.getElementById("firmaContainer");
+
+        estadoSelect.addEventListener("change", function () {
+            if (estadoSelect.value === "RETORNO") {
+                firmaContainer.style.display = "none";
+            } else {
+                firmaContainer.style.display = "block";
+            }
+        });
+    });
+</script>
+
 <!-- Librería SignaturePad -->
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.0/dist/signature_pad.umd.min.js"></script>
 
@@ -269,4 +285,18 @@
             obsContainer.style.display = 'none';
         }
     }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const estadoSelect = document.getElementById("estado");
+        const firmaContainer = document.getElementById("firmaContainer");
+
+        estadoSelect.addEventListener("change", function () {
+            if (estadoSelect.value === "RETORNO") {
+                firmaContainer.style.display = "none";
+            } else {
+                firmaContainer.style.display = "block";
+            }
+        });
+    });
 </script>
