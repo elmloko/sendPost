@@ -1,11 +1,21 @@
-<div>
-    <h2 class="text-xl font-bold mb-4 text-center">Estadísticas de Paquetes por Ciudad</h2>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12 text-center">
+            <h2 class="mb-4">Estadísticas de Paquetes por Ciudad</h2>
+        </div>
+    </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-4 max-w-screen-lg mx-auto">
+    <div class="row">
         @foreach ($dataChart as $ciudad => $accions)
-            <div class="bg-white shadow-md rounded-lg p-4 h-[400px] flex flex-col items-center">
-                <h3 class="text-lg font-semibold text-center">{{ $ciudad }}</h3>
-                <div id="chart-{{ Str::slug($ciudad) }}" class="h-64 w-full"></div>
+            <div class="col-sm-6 col-md-4 col-lg-3">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h3 class="card-title">{{ $ciudad }}</h3>
+                    </div>
+                    <div class="card-body" style="height: 350px;">
+                        <div id="chart-{{ Str::slug($ciudad) }}" style="height: 100%;"></div>
+                    </div>
+                </div>
             </div>
 
             <script>
@@ -13,6 +23,7 @@
                     Highcharts.chart("chart-{{ Str::slug($ciudad) }}", {
                         chart: {
                             type: 'pie'
+                            // height: 350 // (opcional) puedes fijar la altura del chart en vez de usar CSS
                         },
                         title: {
                             text: "Distribución en {{ $ciudad }}",
@@ -22,6 +33,8 @@
                             pie: {
                                 allowPointSelect: true,
                                 cursor: 'pointer',
+                                // Ajusta el tamaño del círculo (en porcentaje o píxeles, por ejemplo "70%" o 200)
+                                size: '70%',
                                 dataLabels: {
                                     enabled: true,
                                     format: '<b>{point.name}</b>: {point.y}',
@@ -33,10 +46,10 @@
                             name: 'Cantidad',
                             colorByPoint: true,
                             data: [
-                                { name: 'Asignado', y: {{ $accions['ASIGNADO'] ?? 0 }} },
-                                { name: 'Cartero', y: {{ $accions['CARTERO'] ?? 0 }} },
-                                { name: 'Retorno', y: {{ $accions['RETORNO'] ?? 0 }} },
-                                { name: 'Intentos', y: {{ $accions['INTENTO'] ?? 0 }} },
+                                { name: 'Asignado',  y: {{ $accions['ASIGNADO'] ?? 0 }} },
+                                { name: 'Cartero',   y: {{ $accions['CARTERO']  ?? 0 }} },
+                                { name: 'Retorno',   y: {{ $accions['RETORNO']  ?? 0 }} },
+                                { name: 'Intentos',  y: {{ $accions['INTENTO']  ?? 0 }} },
                                 { name: 'Entregado', y: {{ $accions['ENTREGADO'] ?? 0 }} }
                             ]
                         }]
@@ -45,6 +58,7 @@
             </script>
         @endforeach
     </div>
-
-    <script src="https://code.highcharts.com/highcharts.js"></script>
 </div>
+
+<!-- Dependencia de Highcharts -->
+<script src="https://code.highcharts.com/highcharts.js"></script>
