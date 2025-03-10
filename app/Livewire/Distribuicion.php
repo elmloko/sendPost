@@ -73,7 +73,7 @@ class Distribuicion extends Component
                 'options' => [],
             ],
             [
-                'url' => "https://correos.gob.bo:8000/api/prueba/{$this->codigo}",
+                'url' => "https://172.65.10.52/api/prueba/{$this->codigo}",
                 'alias' => 'TRACKINGBO',
                 'options' => [
                     'headers' => [
