@@ -63,7 +63,7 @@ class Distribuicion extends Component
         // Lista de APIs a consultar con sus alias
         $apis = [
             [
-                'url' => "http://172.65.10.52/api/admisiones/buscar-por-codigo/{$this->codigo}",
+                'url' => "http://172.65.10.52:8011/api/admisiones/buscar-por-codigo/{$this->codigo}",
                 'alias' => 'EMS',
                 'options' => [],
             ],
@@ -73,7 +73,7 @@ class Distribuicion extends Component
                 'options' => [],
             ],
             [
-                'url' => "http://172.65.10.52:8006/api/prueba/{$this->codigo}",
+                'url' => "http://172.65.10.52/api/prueba/{$this->codigo}",
                 'alias' => 'TRACKINGBO',
                 'options' => [
                     'headers' => [
