@@ -7,7 +7,7 @@ use App\Models\Paquete;
 use App\Models\Event;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Auth;
-use Barryvdh\DomPDF\Facade\PDF;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 
@@ -230,7 +230,7 @@ class Distribuicion extends Component
         if ($paquetes->isEmpty()) {
             $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => []]);
         } else {
-            $pdf = PDF::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
+            $pdf = Pdf::loadView('cartero.pdf.asignar', ['packages' => $paquetes]);
 
             foreach ($paquetes as $paquete) {
                 Event::create([
