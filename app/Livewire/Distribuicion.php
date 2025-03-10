@@ -73,7 +73,7 @@ class Distribuicion extends Component
                 'options' => [],
             ],
             [
-                'url' => "https://172.65.10.52/api/prueba/{$this->codigo}",
+                'url' => "http://172.65.10.52:8006/api/prueba/{$this->codigo}",
                 'alias' => 'TRACKINGBO',
                 'options' => [
                     'headers' => [
