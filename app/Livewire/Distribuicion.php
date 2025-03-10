@@ -117,12 +117,12 @@ class Distribuicion extends Component
         // if ($sistema_origen === 'TRACKINGBO' && $estado !== 'VENTANILLA') {
         //     session()->flash('error', 'El estado del paquete para TRACKINGBO debe ser VENTANILLA.');
         //     return;
-        // // } elseif ($sistema_origen === 'EMS' && $estado !== '3') {
-        // //     session()->flash('error', 'El estado del paquete para EMS debe ser 3.');
-        // //     return;
-        // // } elseif ($sistema_origen === 'GESCON' && $estado !== '5') {
-        // //     session()->flash('error', 'El estado del paquete para GESCON debe ser 5.');
-        // //     return;
+        // } elseif ($sistema_origen === 'EMS' && $estado !== '3') {
+        //     session()->flash('error', 'El estado del paquete para EMS debe ser 3.');
+        //     return;
+        // } elseif ($sistema_origen === 'GESCON' && $estado !== '5') {
+        //     session()->flash('error', 'El estado del paquete para GESCON debe ser 5.');
+        //     return;
         // }
 
         // Valida que la ciudad del paquete coincida con la del usuario autenticado
