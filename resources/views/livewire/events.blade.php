@@ -66,7 +66,7 @@
                                         <td>{{ ++$i }}</td>
                                         <td>{{ $event->action }}</td>
                                         <td>{{ $event->descripcion }}</td>
-                                        <td>{{ $event->user_id }}</td>
+                                        <td>{{ $event->user ? $event->user->name : 'Usuario eliminado' }}</td>
                                         <td>{{ $event->codigo }}</td>
                                         <td>{{ $event->created_at }}</td>
                                     </tr>
