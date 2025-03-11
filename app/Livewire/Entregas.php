@@ -5,14 +5,14 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\Paquete;
 use App\Models\Event;
-use Livewire\WithFileUploads;          // <-- Importante para subir archivos
+use Livewire\WithFileUploads;          // Necesario para subir archivos
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
 
 class Entregas extends Component
 {
-    use WithFileUploads;               // <-- Necesario para subir archivos
+    use WithFileUploads;
 
     public $codigo = '';      // Campo para la búsqueda
     public $paquetes = [];
@@ -27,7 +27,7 @@ class Entregas extends Component
     // Campo para capturar la firma en base64
     public $firma;
 
-    // Nuevo campo para almacenar la imagen (archivo) que se sube
+    // Campo para almacenar la imagen (archivo) que se sube
     public $photo;
 
     // Reglas de validación
@@ -38,10 +38,25 @@ class Entregas extends Component
         // 'firma'    => 'required_if:estado,ENTREGADO', // Descomenta si la firma es obligatoria al ENTREGAR
     ];
 
+    /**
+     * Método auxiliar para verificar si el usuario tiene rol de Administrador o Encargado.
+     */
+    protected function isAdmin()
+    {
+        return auth()->user()->hasAnyRole(['Administrador', 'Encargado']);
+    }
+
     public function mount()
     {
-        // Solo mostrar paquetes con estado "CARTERO"
-        $this->paquetes = Paquete::where('accion', 'CARTERO')->get();
+        if ($this->isAdmin()) {
+            // Si es Administrador/Encargado, se muestran todos los paquetes con estado "CARTERO"
+            $this->paquetes = Paquete::where('accion', 'CARTERO')->get();
+        } else {
+            // Para otros roles, se muestran solo los paquetes asignados al usuario
+            $this->paquetes = Paquete::where('accion', 'CARTERO')
+                ->where('user', auth()->user()->name)
+                ->get();
+        }
     }
 
     public function buscar()
@@ -50,12 +65,14 @@ class Entregas extends Component
             'codigo' => 'nullable|string',
         ]);
 
-        // Filtrar los paquetes con estado "CARTERO" y opcionalmente por código
-        $this->paquetes = Paquete::where('accion', 'CARTERO')
-            ->when($this->codigo, function ($query) {
-                $query->where('codigo', 'like', "%{$this->codigo}%");
-            })
-            ->get();
+        $query = Paquete::where('accion', 'CARTERO');
+        if (! $this->isAdmin()) {
+            $query->where('user', auth()->user()->name);
+        }
+        if ($this->codigo) {
+            $query->where('codigo', 'like', "%{$this->codigo}%");
+        }
+        $this->paquetes = $query->get();
     }
 
     // Método para abrir el modal y asignar el paquete seleccionado
@@ -83,21 +100,27 @@ class Entregas extends Component
     // Método que procesa la acción de dar de baja
     public function darDeBaja()
     {
-        // Si quieres que la firma y foto sean obligatorias también para RETORNO, 
-        // cambia las reglas a 'required_if:estado,ENTREGADO,RETORNO', etc.
         $this->validate([
             'estado'      => 'required|in:ENTREGADO,RETORNO',
-            'observacion' => 'required_if:estado,RETORNO',  // ← OBLIGATORIO en RETORNO
+            'observacion' => 'required_if:estado,RETORNO',
             'photo'       => 'nullable|image|max:10240',
-            'firma'       => 'required_if:estado,ENTREGADO', // ← OBLIGATORIO en ENTREGADO
+            'firma'       => 'required_if:estado,ENTREGADO',
         ]);
     
         Log::info('Contenido de la firma al guardar: ' . substr($this->firma, 0, 100) . '...');
         Log::info('Estado seleccionado: ' . $this->estado);
     
-        $paquete = Paquete::find($this->selectedPaquete);
+        // Buscar el paquete según el rol del usuario
+        if ($this->isAdmin()) {
+            $paquete = Paquete::find($this->selectedPaquete);
+        } else {
+            $paquete = Paquete::where('id', $this->selectedPaquete)
+                ->where('user', auth()->user()->name)
+                ->first();
+        }
+    
         if (! $paquete) {
-            session()->flash('error', 'Paquete no encontrado.');
+            session()->flash('error', 'Paquete no encontrado o no autorizado.');
             $this->closeModal();
             $this->dispatch('reloadPage');
             return;
@@ -173,8 +196,8 @@ class Entregas extends Component
                         try {
                             $imagenesData = [
                                 "codigo" => $paquete->codigo,
-                                "foto"   => $photoBase64, // data:image/...;base64,...
-                                "firma"  => $this->firma, // data:image/...;base64,...
+                                "foto"   => $photoBase64,
+                                "firma"  => $this->firma,
                             ];
                             $imagenesResponse = Http::withHeaders($headers)
                                 ->put('http://172.65.10.52/api/actualizar-imagenes', $imagenesData);
@@ -212,7 +235,7 @@ class Entregas extends Component
                         try {
                             $datosLocal = [
                                 "codigo"              => $paquete->codigo,
-                                "estado"              => 5, // Ajusta si tu API lo requiere
+                                "estado"              => 5,
                                 "firma_entrega"       => $this->firma,
                                 "observacion_entrega" => $this->observacion_entrega,
                                 "photo"               => $photoBase64,
@@ -252,11 +275,11 @@ class Entregas extends Component
                             'user_id'     => auth()->id(),
                         ]);
     
-                        // --- Llamada local a /retornar-envio (AJUSTA si necesitas) ---
+                        // --- Llamada local a /retornar-envio ---
                         try {
                             $datosLocalRetorno = [
                                 "codigo"      => $paquete->codigo,
-                                "estado"      => 10, // Ajusta según tu lógica
+                                "estado"      => 10,
                                 "firma"       => $this->firma,
                                 "observacion" => $this->observacion,
                                 "photo"       => $photoBase64,
@@ -298,11 +321,9 @@ class Entregas extends Component
         }
     
         $this->closeModal();
-        $this->dispatch('reloadPage');  // fuerza recarga en el front
+        $this->dispatch('reloadPage');  // Fuerza recarga en el front
     }
     
-    
-
     public function render()
     {
         return view('livewire.entregas');
