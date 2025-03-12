@@ -278,21 +278,22 @@ class Entregas extends Component
                         // --- Llamada local a /retornar-envio ---
                         try {
                             $datosLocalRetorno = [
-                                "codigo"      => $paquete->codigo,
-                                "estado"      => 10,
-                                "firma"       => $this->firma,
-                                "observacion" => $this->observacion,
-                                "photo"       => $photoBase64,
+                                "codigo"            => $paquete->codigo,
+                                "estado"            => 10,
+                                "firma"     => $this->firma, // Asegúrate de usar el mismo nombre que en la API
+                                "observacion_entrega" => $this->observacion, // Cambiado a 'observacion_entrega'
+                                "photo"             => $photoBase64,
                             ];
-    
+                            
+                        
                             $headersLocal = [
                                 'Accept'       => 'application/json',
                                 'Content-Type' => 'application/json',
                             ];
-    
+                        
                             $responseLocalRetorno = Http::withHeaders($headersLocal)
-                                ->put('http://172.65.10.52:8011/api/retornar-envio', $datosLocalRetorno);
-    
+                                ->put('http://172.65.10.52:8011/api/entregar-envio', $datosLocalRetorno);
+                        
                             if ($responseLocalRetorno->successful()) {
                                 Log::info("Paquete {$paquete->codigo} actualizado en la API local `/retornar-envio` con éxito.");
                             } else {
@@ -303,6 +304,7 @@ class Entregas extends Component
                             Log::error("Excepción en `/retornar-envio`: " . $e->getMessage());
                             session()->flash('error', 'Error de conexión con la API local.');
                         }
+                        
                     }
     
                     session()->flash('message', 'El paquete se ha dado de baja correctamente.');
