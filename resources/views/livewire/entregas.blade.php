@@ -136,21 +136,22 @@
 
 
 
-
+                           
                             <!-- Sección de firma -->
                             @if ($estado !== 'RETORNO')
-                                <!-- Sección de firma -->
-                                <div class="mb-3" id="firmaContainer">
-                                    <label for="firma" class="form-label fw-bold">Firma</label>
-                                    <!-- Input oculto donde se almacena la firma en base64 -->
-                                    <input type="hidden" wire:model="firma" id="inputbase64">
-
-                                    <!-- Lienzo de la firma -->
+                            <!-- Sección de firma -->
+                            <div class="mb-3" id="firmaContainer">
+                                <label for="firma" class="form-label fw-bold">Firma</label>
+                                <!-- Input oculto donde se almacena la firma en base64 -->
+                                <input type="hidden" wire:model="firma" id="inputbase64">
+                        
+                                <!-- Lienzo de la firma -->
+                                <div class="text-center">
                                     <canvas id="canvas" class="border border-secondary rounded bg-white w-100"
-                                        style="width: 100%; height: auto;"></canvas>
-
+                                        style="max-width: 100%; height: auto;" width="600" height="250">
+                                    </canvas>
                                 </div>
-
+                        
                                 <!-- Botones para guardar y limpiar la firma -->
                                 <div class="mt-2 text-center">
                                     <button type="button" id="guardar" class="btn btn-primary me-2">
@@ -163,43 +164,43 @@
                                 @error('firma')
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
+                            </div>
+                        @endif
+                        
+                            <div class="mb-3">
+                                <label for="photo" class="form-label fw-bold">Imagen (opcional)</label>
+                                <input type="file" wire:model="photo" id="photo" class="form-control">
+                                @error('photo')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <!-- Previsualización de la imagen -->
+                            @if ($photo)
+                                <div class="mb-3 text-center">
+                                    <img src="{{ $photo->temporaryUrl() }}" alt="Previsualización"
+                                        class="img-thumbnail mt-2" style="max-width: 200px;">
+                                </div>
+                            @endif
+                            <!-- Fin sección firma -->
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-outline-secondary" wire:click="closeModal">
+                                    Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    Guardar
+                                </button>
+                            </div>
+                            <!-- Campo para subir la imagen -->
+
+
+                        </form>
                     </div>
-    @endif
-
-    <div class="mb-3">
-        <label for="photo" class="form-label fw-bold">Imagen (opcional)</label>
-        <input type="file" wire:model="photo" id="photo" class="form-control">
-        @error('photo')
-            <span class="text-danger">{{ $message }}</span>
-        @enderror
-    </div>
-
-    <!-- Previsualización de la imagen -->
-    @if ($photo)
-        <div class="mb-3 text-center">
-            <img src="{{ $photo->temporaryUrl() }}" alt="Previsualización" class="img-thumbnail mt-2"
-                style="max-width: 200px;">
+                </div>
+            </div>
         </div>
     @endif
-    <!-- Fin sección firma -->
-
-    <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" wire:click="closeModal">
-            Cancelar
-        </button>
-        <button type="submit" class="btn btn-success">
-            Guardar
-        </button>
-    </div>
-    <!-- Campo para subir la imagen -->
-
-
-    </form>
-</div>
-</div>
-</div>
-</div>
-@endif
 
 
 </div>
@@ -215,17 +216,17 @@
     window.addEventListener('initFirma', function() {
         // Esperamos a que Livewire pinte el modal:
         setTimeout(() => {
-            const canvas = document.getElementById('canvas');
-            // Calcula el tamaño real
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            canvas = document.getElementById('canvas');
+            if (!canvas) return; // Si no se encuentra, salimos
 
-            // Ahora inicializa SignaturePad
+            // Recomendado para permitir gestos táctiles:
+            canvas.style.touchAction = 'none';
+
+            // Inicializar la SignaturePad
             signaturePad = new SignaturePad(canvas, {
                 backgroundColor: 'rgb(255,255,255)',
                 penColor: 'rgb(0, 0, 0)'
             });
-
 
             inputBase64 = document.getElementById('inputbase64');
 
@@ -272,20 +273,21 @@
             obsContainer.style.display = 'none';
         }
     }
-    document.addEventListener('DOMContentLoaded', function() {
-        const estadoSelect = document.getElementById('estado');
-        const firmaContainer = document.getElementById('firmaContainer');
+    document.addEventListener('DOMContentLoaded', function () {
+    const estadoSelect = document.getElementById('estado');
+    const firmaContainer = document.getElementById('firmaContainer');
 
-        if (estadoSelect && firmaContainer) {
-            estadoSelect.addEventListener('change', function() {
-                if (this.value === 'RETORNO') {
-                    firmaContainer.style.display = 'none'; // Ocultar firma
-                } else {
-                    firmaContainer.style.display = 'block'; // Mostrar firma
-                }
-            });
-        }
-    });
+    if (estadoSelect && firmaContainer) {
+        estadoSelect.addEventListener('change', function () {
+            if (this.value === 'RETORNO') {
+                firmaContainer.style.display = 'none'; // Ocultar firma
+            } else {
+                firmaContainer.style.display = 'block'; // Mostrar firma
+            }
+        });
+    }
+});
+
 </script>
 <script>
     window.addEventListener('reloadPage', event => {
