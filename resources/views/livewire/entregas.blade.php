@@ -216,13 +216,12 @@
     window.addEventListener('initFirma', function() {
         // Esperamos a que Livewire pinte el modal:
         setTimeout(() => {
-            canvas = document.getElementById('canvas');
-            if (!canvas) return; // Si no se encuentra, salimos
+            const canvas = document.getElementById('canvas');
+            // Calcula el tamaño real
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
 
-            // Recomendado para permitir gestos táctiles:
-            canvas.style.touchAction = 'none';
-
-            // Inicializar la SignaturePad
+            // Ahora inicializa SignaturePad
             signaturePad = new SignaturePad(canvas, {
                 backgroundColor: 'rgb(255,255,255)',
                 penColor: 'rgb(0, 0, 0)'
