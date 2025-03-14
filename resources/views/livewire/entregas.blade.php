@@ -289,3 +289,8 @@
 });
 
 </script>
+<script>
+    window.addEventListener('reloadPage', event => {
+        location.reload();
+    });
+</script>
