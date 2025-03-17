@@ -104,8 +104,15 @@ class Entregas extends Component
             'estado'      => 'required|in:ENTREGADO,RETORNO',
             'observacion' => 'required_if:estado,RETORNO',
             'photo'       => 'nullable|image|max:10240',
-            'firma'       => 'required_if:estado,ENTREGADO',
+            // Ya no validamos firma aquí
         ]);
+    
+        // Validación personalizada: Si estado = ENTREGADO, firma o photo deben estar presentes
+        if ($this->estado === 'ENTREGADO' && empty($this->firma) && empty($this->photo)) {
+            $this->addError('firma', 'Debes proporcionar al menos la firma o una foto.');
+            $this->addError('photo', 'Debes proporcionar al menos la firma o una foto.');
+            return;
+        }
     
         Log::info('Contenido de la firma al guardar: ' . substr($this->firma, 0, 100) . '...');
         Log::info('Estado seleccionado: ' . $this->estado);
