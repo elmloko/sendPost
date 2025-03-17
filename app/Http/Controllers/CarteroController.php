@@ -22,4 +22,8 @@ class CarteroController extends Controller
     {
         return view('cartero.inventario');
     }
+    public function getPaquetes()
+    {
+        return view('cartero.paquetes');
+    }
 }

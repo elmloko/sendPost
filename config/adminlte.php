@@ -349,6 +349,12 @@ return [
 
             'submenu' => [
                 [
+                    'text' => 'Todos los Paquetes',
+                    'url' => 'paquetes',
+                    // 'can'  => 'paquetes.distribuicion',
+                    'icon' => 'fas fa-user',
+                ],
+                [
                     'text' => 'Distribuicion Paqueteria',
                     'url' => 'distribuicion',
                     'can'  => 'paquetes.distribuicion',

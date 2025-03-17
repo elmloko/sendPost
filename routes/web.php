@@ -74,6 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/entregas', [CarteroController::class, 'getEntregas']);
     Route::get('/despacho', [CarteroController::class, 'getDespacho']);
     Route::get('/inventario', [CarteroController::class, 'getInventario']);
+    Route::get('/paquetes', [CarteroController::class, 'getPaquetes']);
 
     Route::get('/event', [EventController::class, 'getEvent']);
 
