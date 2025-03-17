@@ -68,7 +68,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center">No hay paquetes con estado CARTERO.</td>
+                            <td colspan="7" class="text-center">No hay paquetes con estado CARTERO.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -82,9 +82,7 @@
             <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                 <div class="modal-content border-primary shadow-lg">
                     <div class="modal-header bg-primary text-white">
-                        <!-- Muestra el código del paquete -->
                         @php
-                            // Intentamos obtener el paquete actual para mostrar su código en el título
                             $modalPaquete = $paquetes->where('id', $selectedPaquete)->first();
                             $codigoPaquete = $modalPaquete ? $modalPaquete->codigo : '';
                         @endphp
@@ -93,9 +91,12 @@
                     </div>
                     <div class="modal-body">
                         <form wire:submit.prevent="darDeBaja">
+
+                            {{-- Selección de estado --}}
                             <div class="mb-3" wire:ignore.self>
                                 <label for="estado" class="form-label fw-bold">Estado</label>
-                                <select id="estado" wire:model="estado" class="form-select">
+                                <select id="estado" class="form-select" wire:model="estado"
+                                    onchange="toggleCampos()">
                                     <option value="">Seleccione un estado</option>
                                     <option value="ENTREGADO">ENTREGADO</option>
                                     <option value="RETORNO">RETORNO</option>
@@ -105,54 +106,46 @@
                                 @enderror
                             </div>
 
-                            @if ($estado === 'RETORNO')
-                                <div class="mb-3">
-                                    <label for="observacion" class="form-label fw-bold">Observaciones</label>
-                                    <select id="observacion" wire:model="observacion" class="form-select">
-                                        <option value="">Seleccione una observación</option>
-                                        <option value="Dirección incorrecta">Dirección incorrecta</option>
-                                        <option value="Destinatario no localizado">Destinatario no localizado</option>
-                                        <option value="Destinatario ausente">Destinatario ausente</option>
-                                        <option value="Artículo rechazado">Artículo rechazado</option>
-                                        <option value="Reprogramación solicitada">Reprogramación solicitada</option>
-                                        <option value="Acceso restringido">Acceso restringido</option>
-                                        <option value="Artículo equivocado">Artículo equivocado</option>
-                                        <option value="Artículo dañado">Artículo dañado</option>
-                                        <option value="No reclamado">No reclamado</option>
-                                        <option value="Fallecido">Fallecido</option>
-                                        <option value="Fuerza mayor">Fuerza mayor</option>
-                                        <option value="Recojo en agencia">Recojo en agencia</option>
-                                        <option value="Destinatario de vacaciones">Destinatario de vacaciones</option>
-                                        <option value="Destinatario en traslado">Destinatario en traslado</option>
-                                        <option value="Falta de identificación">Falta de identificación</option>
-                                        <option value="Reintentos fallidos">Reintentos fallidos</option>
-                                        <option value="Otros">Otros</option>
-                                    </select>
-                                    @error('observacion')
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            @endif
+                            {{-- Observaciones: en DOM siempre, mostramos/ocultamos con JS --}}
+                            <div class="mb-3" id="observacionContainer" style="display:none;">
+                                <label for="observacion" class="form-label fw-bold">Observaciones</label>
+                                <select id="observacion" wire:model="observacion" class="form-select">
+                                    <option value="">Seleccione una observación</option>
+                                    <option value="Dirección incorrecta">Dirección incorrecta</option>
+                                    <option value="Destinatario no localizado">Destinatario no localizado</option>
+                                    <option value="Destinatario ausente">Destinatario ausente</option>
+                                    <option value="Artículo rechazado">Artículo rechazado</option>
+                                    <option value="Reprogramación solicitada">Reprogramación solicitada</option>
+                                    <option value="Acceso restringido">Acceso restringido</option>
+                                    <option value="Artículo equivocado">Artículo equivocado</option>
+                                    <option value="Artículo dañado">Artículo dañado</option>
+                                    <option value="No reclamado">No reclamado</option>
+                                    <option value="Fallecido">Fallecido</option>
+                                    <option value="Fuerza mayor">Fuerza mayor</option>
+                                    <option value="Recojo en agencia">Recojo en agencia</option>
+                                    <option value="Destinatario de vacaciones">Destinatario de vacaciones</option>
+                                    <option value="Destinatario en traslado">Destinatario en traslado</option>
+                                    <option value="Falta de identificación">Falta de identificación</option>
+                                    <option value="Reintentos fallidos">Reintentos fallidos</option>
+                                    <option value="Otros">Otros</option>
+                                </select>
+                                @error('observacion')
+                                    <span class="text-danger">{{ $message }}</span>
+                                @enderror
+                            </div>
 
-
-
-                           
-                            <!-- Sección de firma -->
-                            @if ($estado !== 'RETORNO')
-                            <!-- Sección de firma -->
-                            <div class="mb-3" id="firmaContainer">
+                            {{-- Firma: en DOM siempre, mostramos/ocultamos con JS --}}
+                            <div class="mb-3" id="firmaContainer" style="display:none;">
                                 <label for="firma" class="form-label fw-bold">Firma</label>
-                                <!-- Input oculto donde se almacena la firma en base64 -->
+                                <!-- input oculto donde guardamos el base64 -->
                                 <input type="hidden" wire:model="firma" id="inputbase64">
-                        
-                                <!-- Lienzo de la firma -->
+
                                 <div class="text-center">
-                                    <canvas id="canvas" class="border border-secondary rounded bg-white w-100"
-                                        style="max-width: 100%; height: auto;" width="600" height="250">
+                                    <canvas id="canvas" class="border border-secondary rounded bg-white"
+                                        width="600" height="250">
                                     </canvas>
                                 </div>
-                        
-                                <!-- Botones para guardar y limpiar la firma -->
+
                                 <div class="mt-2 text-center">
                                     <button type="button" id="guardar" class="btn btn-primary me-2">
                                         Guardar Firma
@@ -165,8 +158,8 @@
                                     <span class="text-danger">{{ $message }}</span>
                                 @enderror
                             </div>
-                        @endif
-                        
+
+                            {{-- Imagen opcional --}}
                             <div class="mb-3">
                                 <label for="photo" class="form-label fw-bold">Imagen (opcional)</label>
                                 <input type="file" wire:model="photo" id="photo" class="form-control">
@@ -175,14 +168,13 @@
                                 @enderror
                             </div>
 
-                            <!-- Previsualización de la imagen -->
+                            {{-- Previsualización de la imagen --}}
                             @if ($photo)
                                 <div class="mb-3 text-center">
                                     <img src="{{ $photo->temporaryUrl() }}" alt="Previsualización"
                                         class="img-thumbnail mt-2" style="max-width: 200px;">
                                 </div>
                             @endif
-                            <!-- Fin sección firma -->
 
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-outline-secondary" wire:click="closeModal">
@@ -192,36 +184,33 @@
                                     Guardar
                                 </button>
                             </div>
-                            <!-- Campo para subir la imagen -->
-
-
                         </form>
                     </div>
                 </div>
             </div>
         </div>
     @endif
-
-
 </div>
+
 <!-- Librería SignaturePad -->
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@5.0.0/dist/signature_pad.umd.min.js"></script>
 
 <script>
-    // Declaramos variables globales
+    // Variables para SignaturePad
     let signaturePad;
-    let canvas;
     let inputBase64;
 
+    // Inicializar firma cuando Livewire lo indique
     window.addEventListener('initFirma', function() {
-        // Esperamos a que Livewire pinte el modal:
         setTimeout(() => {
             const canvas = document.getElementById('canvas');
-            // Calcula el tamaño real
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
+            if (!canvas) return;
 
-            // Ahora inicializa SignaturePad
+            // Ajustar el tamaño del canvas según atributos width/height
+            canvas.width = 600; // Fijo
+            canvas.height = 250; // Fijo
+
+            // Crear SignaturePad
             signaturePad = new SignaturePad(canvas, {
                 backgroundColor: 'rgb(255,255,255)',
                 penColor: 'rgb(0, 0, 0)'
@@ -232,11 +221,9 @@
             const saveButton = document.getElementById('guardar');
             const clearButton = document.getElementById('limpiar');
 
-            // Asignar eventos
             clearButton.addEventListener('click', limpiarFirma);
             saveButton.addEventListener('click', guardarFirma);
         }, 300);
-        // pequeño delay para asegurarnos de que el modal ya se pintó y es visible
     });
 
     function limpiarFirma() {
@@ -244,7 +231,6 @@
         signaturePad.clear();
         if (inputBase64) {
             inputBase64.value = "";
-            // Disparamos el evento para que Livewire actualice la propiedad
             inputBase64.dispatchEvent(new Event('input'));
         }
     }
@@ -260,35 +246,38 @@
         inputBase64.dispatchEvent(new Event('input'));
         alert('Firma guardada correctamente.');
     }
-</script>
-<script>
-    function toggleObservacion() {
-        const estadoSelect = document.getElementById('estado');
-        const obsContainer = document.getElementById('observacionContainer');
 
-        if (estadoSelect.value === 'RETORNO') {
-            obsContainer.style.display = 'block';
-        } else {
-            obsContainer.style.display = 'none';
+    /**
+     * Mostrar/ocultar los contenedores de Observación y Firma
+     * inmediatamente al cambiar el valor de Estado.
+     */
+    function toggleCampos() {
+        const estado = document.getElementById('estado').value;
+        const firmaContainer = document.getElementById('firmaContainer');
+        const observacionContainer = document.getElementById('observacionContainer');
+
+        if (!firmaContainer || !observacionContainer) return;
+
+        // Si RETORNO, mostramos Observaciones y ocultamos Firma
+        if (estado === 'RETORNO') {
+            observacionContainer.style.display = 'block';
+            firmaContainer.style.display = 'none';
+        }
+        // Si ENTREGADO, mostramos Firma y ocultamos Observaciones
+        else if (estado === 'ENTREGADO') {
+            firmaContainer.style.display = 'block';
+            observacionContainer.style.display = 'none';
+            // Si quieres reiniciar la firma cada vez que pase a ENTREGADO, llama aquí:
+            // Livewire.emit('initFirma');
+        }
+        // Si nada seleccionado, oculta ambos
+        else {
+            observacionContainer.style.display = 'none';
+            firmaContainer.style.display = 'none';
         }
     }
-    document.addEventListener('DOMContentLoaded', function () {
-    const estadoSelect = document.getElementById('estado');
-    const firmaContainer = document.getElementById('firmaContainer');
 
-    if (estadoSelect && firmaContainer) {
-        estadoSelect.addEventListener('change', function () {
-            if (this.value === 'RETORNO') {
-                firmaContainer.style.display = 'none'; // Ocultar firma
-            } else {
-                firmaContainer.style.display = 'block'; // Mostrar firma
-            }
-        });
-    }
-});
-
-</script>
-<script>
+    // Recargar la página cuando Livewire lo indique
     window.addEventListener('reloadPage', event => {
         location.reload();
     });
