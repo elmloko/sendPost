@@ -73,7 +73,7 @@ class Distribuicion extends Component
                 'options' => [],
             ],
             [
-                'url' => "http://correos.gob.bo/api/prueba/{$this->codigo}",
+                'url' => "http://172.65.10.52/api/prueba/{$this->codigo}",
                 'alias' => 'TRACKINGBO',
                 'options' => [
                     'headers' => [
@@ -241,7 +241,7 @@ class Distribuicion extends Component
                 ]);
 
                 $api_urls = [
-                    'TRACKINGBO' => "http://correos.gob.bo/api/updatePackage/{$paquete->codigo}",
+                    'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
                     'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
                     'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
                 ];
