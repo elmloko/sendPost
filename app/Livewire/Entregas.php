@@ -146,7 +146,7 @@ class Entregas extends Component
     
         // APIs externas según sys
         $api_urls = [
-            'TRACKINGBO' => "http://172.18.242.145/api/updatePackage/{$paquete->codigo}",
+            'TRACKINGBO' => "http://172.18.242.145:8000/api/updatePackage/{$paquete->codigo}",
             'EMS'        => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
             'GESCON'     => "http://172.65.10.52:8450/api/solicitud/actualizar-estado",
         ];
@@ -207,7 +207,7 @@ class Entregas extends Component
                                 "firma"  => $this->firma,
                             ];
                             $imagenesResponse = Http::withHeaders($headers)
-                                ->put('http://172.18.242.145/api/actualizar-imagenes', $imagenesData);
+                                ->put('http://172.18.242.145:8000/api/actualizar-imagenes', $imagenesData);
     
                             if ($imagenesResponse->successful()) {
                                 Log::info("Imagen(es) para paquete {$paquete->codigo} actualizadas en TRACKINGBO con éxito.");

@@ -49,7 +49,7 @@ class Despacho extends Component
         if ($paquete) {
             // Definir URLs según el origen del paquete
             $api_urls = [
-                'TRACKINGBO' => "http://172.18.242.145/api/updatePackage/{$codigo}",
+                'TRACKINGBO' => "http://172.18.242.145:8000/api/updatePackage/{$codigo}",
                 'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
                 'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
             ];
@@ -137,7 +137,7 @@ class Despacho extends Component
 
         if ($paquete) {
             $api_urls = [
-                'TRACKINGBO' => "http://172.18.242.145/api/updatePackage/{$codigo}",
+                'TRACKINGBO' => "http://172.18.242.145:8000/api/updatePackage/{$codigo}",
                 'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
                 'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
             ];
