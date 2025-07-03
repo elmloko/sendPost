@@ -314,88 +314,89 @@ return [
         [
             'text' => 'Dashboard',
             'url' => '/dashboard',
-            'icon' => 'fas fa-user',
+            'icon' => 'fas fa-tachometer-alt', // Ícono clásico para dashboards
         ],
         [
-            'text' => 'Gestion Usuarios',
-            'icon' => 'fas fa-users',
+            'text' => 'Gestión Usuarios',
+            'icon' => 'fas fa-users', // Grupo de usuarios
             'can'  => 'odin',
             'submenu' => [
                 [
                     'text' => 'Personal AGBC',
                     'url' => 'users',
-                    'icon' => 'fas fa-user',
+                    'icon' => 'fas fa-id-badge', // Identificación del personal
                 ],
                 [
                     'text' => 'Roles',
                     'url' => 'roles',
-                    'icon' => 'fas fa-users-cog',
+                    'icon' => 'fas fa-user-shield', // Representa roles con privilegios
                 ],
                 [
                     'text' => 'Permisos',
                     'url' => 'permissions',
-                    'icon' => 'fas fa-key',
+                    'icon' => 'fas fa-unlock-alt', // Permiso, acceso autorizado
                 ],
                 [
                     'text' => 'Accesos',
                     'url' => 'role-has-permissions',
-                    'icon' => 'fas fa-key',
+                    'icon' => 'fas fa-door-open', // Acceso físico o lógico
                 ],
             ],
         ],
         [
-            'text' => 'Entregas Paqueteria',
-            'icon' => 'fas fa-users',
+            'text' => 'Entregas Paquetería',
+            'icon' => 'fas fa-truck', // Representa reparto o entregas
 
             'submenu' => [
                 [
                     'text' => 'Todos los Paquetes',
                     'url' => 'paquetes',
                     // 'can'  => 'paquetes.distribuicion',
-                    'icon' => 'fas fa-user',
+                    'icon' => 'fas fa-boxes', // Varios paquetes agrupados
                 ],
                 [
-                    'text' => 'Distribuicion Paqueteria',
+                    'text' => 'Distribución Paquetería',
                     'url' => 'distribuicion',
                     'can'  => 'paquetes.distribuicion',
-                    'icon' => 'fas fa-user',
+                    'icon' => 'fas fa-dolly', // Ícono ideal para mover/organizar paquetes
                 ],
                 [
                     'text' => 'Entregas Cartero',
                     'url' => 'entregas',
                     'can'  => 'paquetes.entregas',
-                    'icon' => 'fas fa-user',
+                    'icon' => 'fas fa-user-check', // Usuario que entrega o verifica
                 ],
                 [
                     'text' => 'Despacho Cartero',
                     'url' => 'despacho',
                     'can'  => 'paquetes.despacho',
-                    'icon' => 'fas fa-user',
+                    'icon' => 'fas fa-truck-loading', // Carga o despacho
                 ],
                 [
                     'text' => 'Inventario Cartero',
                     'url' => 'inventario',
                     'can'  => 'paquetes.inventario',
-                    'icon' => 'fas fa-user',
+                    'icon' => 'fas fa-clipboard-list', // Para inventario o control
                 ],
             ],
         ],
         [
             'text' => 'Eventos',
             'url' => '/event',
-            'icon' => 'fas fa-user',
-        ],
-        [
-            'text' => 'Rendimiento',
-            'url' => '/pulse',
             'can'  => 'odin',
-            'icon' => 'fas fa-user',
+            'icon' => 'fas fa-calendar-check', // Evento agendado o confirmado
         ],
         [
             'text' => 'Logs',
             'url' => '/log-viewer',
+            'icon' => 'fas fa-file-alt', // Representa claramente registros/logs
             'can'  => 'odin',
-            'icon' => 'fas fa-user',
+        ],
+        [
+            'text' => 'Rendimiento',
+            'url' => '/pulse',
+            'icon' => 'fas fa-tachometer-alt', // Icono de panel o rendimiento
+            'can'  => 'odin',
         ],
     ],
 
