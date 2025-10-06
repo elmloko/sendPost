@@ -63,7 +63,7 @@ class Distribuicion extends Component
         // Lista de APIs a consultar con sus alias
         $apis = [
             [
-                'url' => "http://172.65.10.52:8011/api/admisiones/buscar-por-codigo/{$this->codigo}",
+                'url' => "https://ultrapost.correos.gob.bo:8108/api/admisiones/buscar-por-codigo/{$this->codigo}",
                 'alias' => 'EMS',
                 'options' => [],
             ],
@@ -73,7 +73,7 @@ class Distribuicion extends Component
                 'options' => [],
             ],
             [
-                'url' => "http://172.65.10.52:8000/api/prueba/{$this->codigo}",
+                'url' => "https://trackingbo.correos.gob.bo:8100/api/prueba/{$this->codigo}",
                 'alias' => 'TRACKINGBO',
                 'options' => [
                     'headers' => [
@@ -241,8 +241,8 @@ class Distribuicion extends Component
                 ]);
 
                 $api_urls = [
-                    'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
-                    'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+                    'TRACKINGBO' => "https://trackingbo.correos.gob.bo:8100/api/updatePackage/{$paquete->codigo}",
+                    'EMS' => "https://ultrapost.correos.gob.bo:8108/api/admisiones/cambiar-estado-ems",
                     'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
                 ];
 

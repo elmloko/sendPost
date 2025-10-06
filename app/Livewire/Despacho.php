@@ -49,8 +49,8 @@ class Despacho extends Component
         if ($paquete) {
             // Definir URLs según el origen del paquete
             $api_urls = [
-                'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$codigo}",
-                'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+                'TRACKINGBO' => "https://trackingbo.correos.gob.bo:8100/api/updatePackage/{$codigo}",
+                'EMS' => "https://ultrapost.correos.gob.bo:8108/api/admisiones/cambiar-estado-ems",
                 'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
             ];
 
@@ -137,8 +137,8 @@ class Despacho extends Component
 
         if ($paquete) {
             $api_urls = [
-                'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$codigo}",
-                'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+                'TRACKINGBO' => "https://trackingbo.correos.gob.bo:8100/api/updatePackage/{$codigo}",
+                'EMS' => "https://ultrapost.correos.gob.bo:8108/api/admisiones/cambiar-estado-ems",
                 'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
             ];
 

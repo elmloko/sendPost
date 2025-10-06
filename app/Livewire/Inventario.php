@@ -81,8 +81,8 @@ class Inventario extends Component
         if ($paquete) {
             // Definir las URLs y datos según el sistema de origen
             $api_urls = [
-                'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$codigo}",
-                'EMS' => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+                'TRACKINGBO' => "https://trackingbo.correos.gob.bo:8100/api/updatePackage/{$codigo}",
+                'EMS' => "https://ultrapost.correos.gob.bo:8108/api/admisiones/cambiar-estado-ems",
                 'GESCON' => "http://172.65.10.52:8450/api/solicitudes/cambiar-estado"
             ];
 

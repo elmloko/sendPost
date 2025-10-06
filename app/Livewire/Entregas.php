@@ -146,8 +146,8 @@ class Entregas extends Component
     
         // APIs externas según sys
         $api_urls = [
-            'TRACKINGBO' => "http://172.65.10.52/api/updatePackage/{$paquete->codigo}",
-            'EMS'        => "http://172.65.10.52:8011/api/admisiones/cambiar-estado-ems",
+            'TRACKINGBO' => "https://trackingbo.correos.gob.bo:8100/api/updatePackage/{$paquete->codigo}",
+            'EMS'        => "https://ultrapost.correos.gob.bo:8108/api/admisiones/cambiar-estado-ems",
             'GESCON'     => "http://172.65.10.52:8450/api/solicitud/actualizar-estado",
         ];
     
@@ -207,7 +207,7 @@ class Entregas extends Component
                                 "firma"  => $this->firma,
                             ];
                             $imagenesResponse = Http::withHeaders($headers)
-                                ->put('http://172.65.10.52/api/actualizar-imagenes', $imagenesData);
+                                ->put('https://trackingbo.correos.gob.bo:8100/api/actualizar-imagenes', $imagenesData);
     
                             if ($imagenesResponse->successful()) {
                                 Log::info("Imagen(es) para paquete {$paquete->codigo} actualizadas en TRACKINGBO con éxito.");
@@ -254,7 +254,7 @@ class Entregas extends Component
                             ];
     
                             $responseLocal = Http::withHeaders($headersLocal)
-                                ->put('http://172.65.10.52:8011/api/entregar-envio', $datosLocal);
+                                ->put('https://ultrapost.correos.gob.bo:8108/api/entregar-envio', $datosLocal);
     
                             if ($responseLocal->successful()) {
                                 Log::info("Paquete {$paquete->codigo} actualizado en API local `/entregar-envio` con éxito.");
@@ -299,7 +299,7 @@ class Entregas extends Component
                             ];
                         
                             $responseLocalRetorno = Http::withHeaders($headersLocal)
-                                ->put('http://172.65.10.52:8011/api/entregar-envio', $datosLocalRetorno);
+                                ->put('https://ultrapost.correos.gob.bo:8108/api/entregar-envio', $datosLocalRetorno);
                         
                             if ($responseLocalRetorno->successful()) {
                                 Log::info("Paquete {$paquete->codigo} actualizado en la API local `/retornar-envio` con éxito.");
